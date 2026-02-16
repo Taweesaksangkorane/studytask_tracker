@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blueGrey.withOpacity(0.05),
+                      color: Colors.blueGrey.withAlpha((0.05 * 255).round()),
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Row(
@@ -285,7 +285,7 @@ class _LoginPageState extends State<LoginPage> {
           // --- LOADING ---
           if (isLoading)
             Container(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withAlpha((0.2 * 255).round()),
               child: const Center(child: CircularProgressIndicator()),
             ),
         ],
@@ -307,7 +307,7 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+        border: Border.all(color: Colors.blueAccent.withAlpha((0.2 * 255).round())),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
@@ -368,7 +368,7 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
+        border: Border.all(color: Colors.blueAccent.withAlpha((0.1 * 255).round())),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(

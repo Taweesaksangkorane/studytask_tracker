@@ -1,118 +1,133 @@
 import 'package:flutter/material.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final TextEditingController emailController = TextEditingController();
+  bool isSending = false;
+
+  Future<void> _sendResetLink() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอก Email')),
+      );
+      return;
+    }
+
+    setState(() => isSending = true);
+
+    // Simulate network call / API
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+
+    setState(() => isSending = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง $email')),
+    );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.blueGrey),
+          icon: const Icon(Icons.arrow_back, color: Colors.grey),
           onPressed: () => Navigator.pop(context),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 30.0),
         child: Column(
           children: [
-            const Spacer(flex: 1),
-            // Key Logo
+            const SizedBox(height: 20),
             Center(
               child: Container(
-                padding: const EdgeInsets.all(25),
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
                   color: Colors.blueAccent,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.vpn_key_outlined, size: 60, color: Colors.white),
+                child: const Icon(Icons.lock_open, size: 44, color: Colors.white),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
             const Text(
-              "Forgot Access?",
-              style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E)),
+              'Reset Password',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E)),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             const Text(
-              "Enter your registered email to recover\nyour account credentials.",
+              'Enter your account email and we will send a password reset link.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 28),
 
-            // Input Field
             Align(
               alignment: Alignment.centerLeft,
-              child: const Text("UNIVERSITY EMAIL", style: TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text('EMAIL ADDRESS', style: TextStyle(color: Colors.blueGrey[700], fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              ),
             ),
-            const SizedBox(height: 10),
+
             TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.email_outlined, color: Colors.blueGrey),
-                hintText: "name@university.ac.th",
-                hintStyle: TextStyle(color: Colors.blueGrey.withOpacity(0.3), fontWeight: FontWeight.bold),
+                hintText: 'name@university.ac.th',
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               ),
             ),
-            
-            const SizedBox(height: 30),
 
-            // Submit Button
+            const SizedBox(height: 24),
+
             SizedBox(
               width: double.infinity,
-              height: 65,
+              height: 56,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: isSending ? null : _sendResetLink,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF07101B),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  backgroundColor: const Color(0xFF0F172A),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text("Send Recovery Link", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: isSending
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Send Reset Link', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
-            
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Back to ", style: TextStyle(color: Colors.grey)),
+                const Text('Remembered your password? ', style: TextStyle(color: Colors.grey)),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Text("Sign In", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                  child: const Text('Sign In', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                 ),
               ],
-            ),
-            const Spacer(flex: 2),
-            
-            // Bottom Badge
-            Container(
-              padding: const EdgeInsets.all(15),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                children: const [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.verified_user_outlined, size: 16, color: Colors.tealAccent),
-                      SizedBox(width: 8),
-                      Text("IDENTITY PROTECTION", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 11)),
-                    ],
-                  ),
-                  SizedBox(height: 4),
-                  Text("AUTOMATED SECURITY VERIFICATION ACTIVE", style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
-                ],
-              ),
             ),
             const SizedBox(height: 30),
           ],

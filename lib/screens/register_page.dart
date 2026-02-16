@@ -280,7 +280,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
+        border: Border.all(color: Colors.blueAccent.withAlpha((0.1 * 255).round())),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
