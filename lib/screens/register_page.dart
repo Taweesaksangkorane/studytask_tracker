@@ -67,24 +67,23 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
 
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
+        child: Column(
             children: [
               const SizedBox(height: 10),
 
               // --- LOGO ---
               Center(
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     color: Colors.blueAccent,
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(
                     Icons.person_add_alt_1_rounded,
-                    size: 50,
+                    size: 56,
                     color: Colors.white,
                   ),
                 ),
@@ -156,7 +155,7 @@ class _RegisterPageState extends State<RegisterPage> {
               // --- SIGN UP BUTTON ---
               SizedBox(
                 width: double.infinity,
-                height: 60,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: signUp,
                   icon: const Icon(
@@ -172,7 +171,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F172A),
+                    backgroundColor: Colors.blueAccent,
+                    elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -208,8 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   // ---------------- Widgets ----------------
@@ -254,8 +253,7 @@ class _RegisterPageState extends State<RegisterPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         suffixIcon: suffix,
       ),
     );

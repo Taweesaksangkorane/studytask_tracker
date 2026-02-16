@@ -53,19 +53,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
         child: Column(
           children: [
             const SizedBox(height: 20),
             Center(
               child: Container(
-                width: 90,
-                height: 90,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
                   color: Colors.blueAccent,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.lock_open, size: 44, color: Colors.white),
+                child: const Icon(Icons.lock_open, size: 56, color: Colors.white),
               ),
             ),
             const SizedBox(height: 24),
@@ -109,7 +109,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               child: ElevatedButton(
                 onPressed: isSending ? null : _sendResetLink,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: Colors.blueAccent,
+                  elevation: 4,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: isSending
