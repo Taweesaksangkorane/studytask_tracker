@@ -14,7 +14,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
@@ -48,22 +48,22 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ---------------- USERNAME LOGIN ----------------
-  void signInWithUsername() {
-    final username = usernameController.text.trim();
+  // ---------------- EMAIL LOGIN ----------------
+  void signInWithEmail() {
+    final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("กรอก Username และ Password")),
+        const SnackBar(content: Text("กรอก Email และ Password")),
       );
       return;
     }
 
-    debugPrint("Username → $username");
+    debugPrint("Email → $email");
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Logged in as $username")),
+      SnackBar(content: Text("Logged in as $email")),
     );
 
     // 👉 TODO: ตรวจสอบ backend / ไป Home
@@ -198,8 +198,8 @@ class _LoginPageState extends State<LoginPage> {
 
                   // --- INPUTS ---
                   _buildTextField(
-                    "Username",
-                    controller: usernameController,
+                    "Email",
+                    controller: emailController,
                   ),
                   const SizedBox(height: 15),
                   _buildTextField(
@@ -255,7 +255,7 @@ class _LoginPageState extends State<LoginPage> {
                     width: double.infinity,
                     height: 60,
                     child: ElevatedButton(
-                      onPressed: signInWithUsername,
+                      onPressed: signInWithEmail,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0F172A),
                         shape: RoundedRectangleBorder(
@@ -296,7 +296,7 @@ class _LoginPageState extends State<LoginPage> {
   // ---------------- DISPOSE ----------------
   @override
   void dispose() {
-    usernameController.dispose();
+    emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }

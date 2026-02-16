@@ -9,7 +9,6 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -17,14 +16,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void signUp() {
     final name = nameController.text.trim();
-    final username = usernameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (name.isEmpty ||
-        username.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("กรอกข้อมูลให้ครบทุกช่อง")),
       );
@@ -38,10 +33,10 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    debugPrint("REGISTER → $username / $email");
+    debugPrint("REGISTER → $email");
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Welcome $username 🎉")),
+      SnackBar(content: Text("Welcome $name 🎉")),
     );
 
     // TODO: call API / Firebase / Backend
@@ -50,7 +45,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     nameController.dispose();
-    usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -126,19 +120,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
               const SizedBox(height: 15),
 
-              // --- USERNAME ---
-              _buildInputLabel("USERNAME"),
-              _buildTextField(
-                "Choose Username",
-                controller: usernameController,
-              ),
-
-              const SizedBox(height: 15),
-
               // --- EMAIL ---
               _buildInputLabel("EMAIL ADDRESS"),
               _buildTextField(
-                "name@university.ac.th",
+                "you@example.com",
                 controller: emailController,
               ),
 
