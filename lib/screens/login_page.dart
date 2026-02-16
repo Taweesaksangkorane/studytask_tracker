@@ -11,53 +11,42 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool obscurePassword = true;
 
-  bool get isFormValid =>
-      emailController.text.isNotEmpty &&
-      passwordController.text.isNotEmpty;
-
-  @override
-  void initState() {
-    super.initState();
-    emailController.addListener(() => setState(() {}));
-    passwordController.addListener(() => setState(() {}));
-  }
-
-  // ---------------- GOOGLE LOGIN ----------------
   Future<void> signInWithGoogle() async {
     try {
       setState(() => isLoading = true);
-
       final account = await _googleSignIn.signIn();
-
       if (!mounted) return;
-
       if (account != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Welcome ${account.displayName ?? account.email}")),
+          SnackBar(content: Text('Welcome ${account.displayName ?? account.email}')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Google login failed")),
+        const SnackBar(content: Text('Google login failed')),
       );
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  // ---------------- EMAIL LOGIN ----------------
-  void signInWithEmail() {
-    final email = emailController.text.trim();
-
+  Future<void> signInWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() => isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Logged in as $email (Manual Mode)")),
+      SnackBar(content: Text('Logged in as ${emailController.text.trim()}')),
     );
   }
 
@@ -68,8 +57,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // ---------------- UI ----------------
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,221 +64,151 @@ class _LoginPageState extends State<LoginPage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36),
+            child: Form(
+              key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 80),
-
-                  // LOGO
+                  const SizedBox(height: 20),
                   Container(
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
                       color: Colors.blueAccent,
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 60,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 56),
                   ),
 
                   const SizedBox(height: 20),
-
-                  const Text(
-                    "StudyTask",
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1C2E),
-                    ),
-                  ),
-
+                  const Text('StudyTask', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E))),
                   const SizedBox(height: 8),
-
-                  const Text(
-                    "Your intelligent academic command center.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontSize: 15),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // ---------------- GOOGLE BUTTON ----------------
-                  GestureDetector(
-                    onTap: signInWithGoogle,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.g_mobiledata,
-                              size: 32, color: Colors.red),
-                          SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Continue with Google",
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "Sync your Google Classroom automatically",
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward,
-                              color: Colors.blueAccent),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 35),
-
-                  // ---------------- DIVIDER ----------------
-                  Row(
-                    children: [
-                      Expanded(
-                          child:
-                              Divider(color: Colors.grey.shade300)),
-                      const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          "OR",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                          child:
-                              Divider(color: Colors.grey.shade300)),
-                    ],
-                  ),
+                  const Text('Your intelligent academic command center.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
 
                   const SizedBox(height: 30),
 
-                  // ---------------- EMAIL FIELD ----------------
-                  _buildTextField(
-                    "you@example.com",
+                  // Google login
+                  GestureDetector(
+                    onTap: signInWithGoogle,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 8, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 4),
+                                Text('Sync Google Classroom automatically', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward, color: Colors.blueAccent),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // OR divider
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                      const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // Email
+                  TextFormField(
                     controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    textInputAction: TextInputAction.next,
+                    decoration: _inputDecoration('you@example.com'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Please enter your email';
+                      if (!value.contains('@')) return 'Invalid email';
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 15),
 
-                  // ---------------- PASSWORD FIELD ----------------
-                  _buildTextField(
-                    "Password",
-                    isPassword: true,
+                  const SizedBox(height: 14),
+
+                  // Password
+                  TextFormField(
                     controller: passwordController,
+                    obscureText: obscurePassword,
+                    autofillHints: const [AutofillHints.password],
+                    textInputAction: TextInputAction.done,
+                    decoration: _inputDecoration('Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => obscurePassword = !obscurePassword),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Please enter your password';
+                      if (value.length < 6) return 'Minimum 6 characters';
+                      return null;
+                    },
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  const ForgotPasswordPage()),
-                        );
-                      },
-                      child: const Text(
-                        "Forgot Password?",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage())),
+                      child: const Text('Forgot Password?', style: TextStyle(color: Colors.blueGrey)),
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  // ---------------- SIGN IN BUTTON ----------------
+                  // Sign In
                   SizedBox(
                     width: double.infinity,
-                    height: 58,
+                    height: 56,
                     child: ElevatedButton(
-                      onPressed:
-                          isFormValid ? signInWithEmail : null,
+                      onPressed: isLoading ? null : signInWithEmail,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF0F172A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12),
-                        ),
+                        backgroundColor: Colors.blueAccent,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text(
-                        "Sign In",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: isLoading
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
                     ),
                   ),
 
                   const SizedBox(height: 8),
+                  const Text('Email login allows manual task management only.', style: TextStyle(fontSize: 11, color: Colors.grey)),
 
-                  const Text(
-                    "Email login allows manual task management only.",
-                    style:
-                        TextStyle(fontSize: 11, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "New here? ",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      const Text('New here? '),
                       GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const RegisterPage()),
-                          );
-                        },
-                        child: const Text(
-                          "Create Account",
-                          style: TextStyle(
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())),
+                        child: const Text('Create Account', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -303,35 +220,19 @@ class _LoginPageState extends State<LoginPage> {
           ),
 
           if (isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.2),
-              child:
-                  const Center(child: CircularProgressIndicator()),
-            ),
+            Container(color: Colors.black.withAlpha((0.1 * 255).round()), child: const Center(child: CircularProgressIndicator())),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(
-    String hint, {
-    bool isPassword = false,
-    TextEditingController? controller,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      ),
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
     );
   }
 }
