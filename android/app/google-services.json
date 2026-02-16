@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "145410987696",
+    "project_id": "studytask-tracker",
+    "storage_bucket": "studytask-tracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:145410987696:android:16603d4f3d42de1cc90d75",
+        "android_client_info": {
+          "package_name": "com.example.studytask_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
