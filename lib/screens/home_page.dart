@@ -19,35 +19,44 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TaskFilter _filter = TaskFilter.all;
   DateTime? _lastSyncAt;
+  final TaskService _taskService = TaskService();
+  List<TaskModel> _allTasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _taskService.getTasks().listen((tasks) {
+      if (mounted) {
+        setState(() {
+          _allTasks = tasks;
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  List<TaskModel> get _filteredTasks {
+    if (_filter == TaskFilter.all) return _allTasks;
+    return _allTasks.where((t) => 
+      _filter == TaskFilter.submitted
+        ? t.status == TaskStatus.submitted
+        : t.status == TaskStatus.pending
+    ).toList();
+  }
+
+  int get _total => _allTasks.length;
+  int get _submitted => _allTasks.where((t) => t.status == TaskStatus.submitted).length;
+  int get _pending => _total - _submitted;
 
   @override
   Widget build(BuildContext context) {
-    final TaskService taskService = TaskService();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
-        child: StreamBuilder<List<TaskModel>>(
-          stream: taskService.getTasks(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final tasks = snapshot.data ?? [];
-            final total = tasks.length;
-            final submitted =
-                tasks.where((t) => t.status == TaskStatus.submitted).length;
-            final pending = total - submitted;
-            final filteredTasks = _filter == TaskFilter.all
-              ? tasks
-              : tasks
-                .where((t) => _filter == TaskFilter.submitted
-                  ? t.status == TaskStatus.submitted
-                  : t.status == TaskStatus.pending)
-                .toList();
-
-            return SingleChildScrollView(
+        child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(25.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,19 +70,19 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatCard("ทั้งหมด", total.toString(),
+                      _buildStatCard("ทั้งหมด", _total.toString(),
                           Icons.grid_view_rounded,
                           _filter == TaskFilter.all,
                           Colors.blueAccent, () {
                         setState(() => _filter = TaskFilter.all);
                       }),
-                      _buildStatCard("ส่งแล้ว", submitted.toString(),
+                      _buildStatCard("ส่งแล้ว", _submitted.toString(),
                           Icons.send_rounded,
                           _filter == TaskFilter.submitted,
                           Colors.green, () {
                         setState(() => _filter = TaskFilter.submitted);
                       }),
-                      _buildStatCard("ยังไม่ส่ง", pending.toString(),
+                      _buildStatCard("ยังไม่ส่ง", _pending.toString(),
                           Icons.access_time_filled,
                           _filter == TaskFilter.pending,
                           Colors.orangeAccent, () {
@@ -91,35 +100,47 @@ class _HomePageState extends State<HomePage> {
                         fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  if (filteredTasks.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Text("ยังไม่มีงาน",
-                            style: TextStyle(color: Colors.grey)),
-                      ),
-                    )
-                  else
-                    ...filteredTasks.map((task) {
-                      final isOverdue =
-                          task.status == TaskStatus.pending &&
-                              task.dueDate.isBefore(DateTime.now());
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 15),
-                        child: _buildTaskCard(
-                          context,
-                          task: task,
-                          isOverdue: isOverdue,
-                        ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
                       );
-                    }).toList(),
+                    },
+                    child: _filteredTasks.isEmpty
+                      ? Center(
+                          key: ValueKey('empty-$_filter'),
+                          child: const Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Text("ยังไม่มีงาน",
+                                style: TextStyle(color: Colors.grey)),
+                          ),
+                        )
+                      : Column(
+                          key: ValueKey('list-$_filter-${_filteredTasks.length}'),
+                          children: _filteredTasks.map((task) {
+                            final isOverdue =
+                                task.status == TaskStatus.pending &&
+                                    task.dueDate.isBefore(DateTime.now());
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 15),
+                              child: _buildTaskCard(
+                                context,
+                                task: task,
+                                isOverdue: isOverdue,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                  ),
                   const SizedBox(height: 80),
                 ],
               ),
-            );
-          },
-        ),
+            ),
       ),
       bottomNavigationBar: _buildBottomNav(context),
       floatingActionButton: FloatingActionButton(
@@ -355,7 +376,9 @@ class _HomePageState extends State<HomePage> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(25),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
         width: 100,
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
@@ -364,6 +387,15 @@ class _HomePageState extends State<HomePage> {
           border: isActive
               ? Border.all(color: Colors.blueAccent, width: 2)
               : Border.all(color: Colors.transparent),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: Colors.blueAccent.withAlpha((0.15 * 255).round()),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
         child: Column(
           children: [
