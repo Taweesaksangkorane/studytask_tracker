@@ -210,22 +210,68 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildAISuggestion() {
+    final now = DateTime.now();
+    final overdueTasks = _allTasks.where((t) => 
+      t.status == TaskStatus.pending && t.dueDate.isBefore(now)
+    ).toList();
+    
+    final urgentTasks = _allTasks.where((t) => 
+      t.status == TaskStatus.pending && 
+      t.dueDate.isAfter(now) && 
+      t.dueDate.difference(now).inHours < 48
+    ).toList();
+
+    String message;
+    IconData icon;
+    Color bgColor;
+    Color iconColor;
+    Color textColor;
+
+    if (overdueTasks.isNotEmpty) {
+      final task = overdueTasks.first;
+      message = "⚠️ คุณมีงานค้าง ${overdueTasks.length} ชิ้น! รีบทำ '${task.title}' ให้เสร็จนะ";
+      icon = Icons.warning_amber_rounded;
+      bgColor = const Color(0xFFFFEBEE);
+      iconColor = Colors.red;
+      textColor = Colors.red.shade900;
+    } else if (urgentTasks.isNotEmpty) {
+      final task = urgentTasks.first;
+      final hoursLeft = task.dueDate.difference(now).inHours;
+      message = "⏰ ใกล้ครบกำหนดแล้ว! '${task.title}' เหลือเวลาอีก $hoursLeft ชั่วโมง";
+      icon = Icons.access_time_filled;
+      bgColor = const Color(0xFFFFFBEB);
+      iconColor = Colors.orange;
+      textColor = Colors.brown;
+    } else if (_pending > 0) {
+      message = "💪 คุณมีงานทั้งหมด $_pending ชิ้น ค่อยๆ ทำไปทีละอย่างนะ สู้ๆ!";
+      icon = Icons.auto_awesome;
+      bgColor = const Color(0xFFE3F2FD);
+      iconColor = Colors.blue;
+      textColor = Colors.blue.shade900;
+    } else {
+      message = "🎉 เยี่ยมเลย! คุณไม่มีงานค้าง พักผ่อนได้สบายใจ";
+      icon = Icons.celebration;
+      bgColor = const Color(0xFFE8F5E9);
+      iconColor = Colors.green;
+      textColor = Colors.green.shade900;
+    }
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-          color: const Color(0xFFFFFBEB),
+          color: bgColor,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-              color: Colors.orange.withAlpha((0.1 * 255).round()))),
-      child: const Row(
+              color: iconColor.withAlpha((0.1 * 255).round()))),
+      child: Row(
         children: [
-          Icon(Icons.auto_awesome, color: Colors.orange, size: 20),
-          SizedBox(width: 10),
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-                "ลุย Mobile App Report เริ่มวางแผนล่วงหน้าไว้ก่อนนะ สู้ๆ ครับ คนเก่งทำได้อยู่แล้ว!",
+                message,
                 style:
-                    TextStyle(fontSize: 12, color: Colors.brown)),
+                    TextStyle(fontSize: 12, color: textColor)),
           ),
         ],
       ),
@@ -286,6 +332,8 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   duration: Duration(seconds: 30),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
                 ),
               );
 
@@ -312,6 +360,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     backgroundColor: Colors.white,
                     behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
                   ),
                 );
               } catch (e) {
@@ -339,6 +388,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     backgroundColor: Colors.white,
                     behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
                     action: SnackBarAction(
                       label: "ลองอีกครั้ง",
                       onPressed: () {},
@@ -585,6 +635,8 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildBottomNav(BuildContext context) {
     return BottomAppBar(
+      color: Colors.white,
+      elevation: 8,
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       child: Row(
