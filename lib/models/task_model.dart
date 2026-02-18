@@ -20,7 +20,10 @@ class TaskModel {
       id: id,
       title: data['title'] ?? '',
       subject: data['subject'] ?? '',
-      dueDate: DateTime.parse(data['dueDate']),
+      dueDate: data['dueDate'] != null
+    ? DateTime.parse(data['dueDate'])
+    : DateTime.now(),
+
       status: data['status'] == 'submitted'
           ? TaskStatus.submitted
           : TaskStatus.pending,
