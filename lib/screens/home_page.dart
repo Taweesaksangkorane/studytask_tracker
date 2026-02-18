@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TaskFilter _filter = TaskFilter.all;
+  DateTime? _lastSyncAt;
 
   @override
   Widget build(BuildContext context) {
@@ -56,24 +57,25 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 20),
                   _buildSyncBar(context),
                   const SizedBox(height: 25),
-                  _buildSearchBar(),
-                  const SizedBox(height: 25),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildStatCard("ทั้งหมด", total.toString(),
                           Icons.grid_view_rounded,
-                          _filter == TaskFilter.all, () {
+                          _filter == TaskFilter.all,
+                          Colors.blueAccent, () {
                         setState(() => _filter = TaskFilter.all);
                       }),
                       _buildStatCard("ส่งแล้ว", submitted.toString(),
                           Icons.send_rounded,
-                          _filter == TaskFilter.submitted, () {
+                          _filter == TaskFilter.submitted,
+                          Colors.green, () {
                         setState(() => _filter = TaskFilter.submitted);
                       }),
                       _buildStatCard("ยังไม่ส่ง", pending.toString(),
                           Icons.access_time_filled,
-                          _filter == TaskFilter.pending, () {
+                          _filter == TaskFilter.pending,
+                          Colors.orangeAccent, () {
                         setState(() => _filter = TaskFilter.pending);
                       }),
                     ],
@@ -223,14 +225,17 @@ class _HomePageState extends State<HomePage> {
               child: Icon(Icons.school,
                   color: Colors.white, size: 20)),
           const SizedBox(width: 12),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Classroom Sync",
+              const Text("Classroom Sync",
                   style: TextStyle(fontWeight: FontWeight.bold)),
-              Text("UPDATED AT 14:59",
-                  style:
-                      TextStyle(fontSize: 10, color: Colors.grey)),
+              Text(
+                _lastSyncAt == null
+                    ? "UPDATED AT --:--:--"
+                    : "UPDATED AT ${_formatTime(_lastSyncAt!)}",
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
             ],
           ),
           const Spacer(),
@@ -244,10 +249,14 @@ class _HomePageState extends State<HomePage> {
                       content: Text("Syncing Classroom...")),
                 );
 
+                if (mounted) {
+                  setState(() => _lastSyncAt = DateTime.now());
+                }
+
                 final classroomTasks =
-                    await service.fetchCourseWorkTasks();
+                  await service.fetchCourseWorkTasks();
                 final savedCount = await taskService
-                    .upsertClassroomTasks(classroomTasks);
+                  .upsertClassroomTasks(classroomTasks);
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -275,18 +284,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: "ค้นหาวิชาหรือชื่อวิชา...",
-        prefixIcon: const Icon(Icons.search),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none),
-      ),
-    );
+  String _formatTime(DateTime value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    final second = value.second.toString().padLeft(2, '0');
+    return "$hour:$minute:$second";
   }
 
   Widget _buildStatCard(
@@ -294,6 +296,7 @@ class _HomePageState extends State<HomePage> {
     String count,
     IconData icon,
     bool isActive,
+    Color activeColor,
     VoidCallback onTap,
   ) {
     return InkWell(
@@ -313,7 +316,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Icon(
               icon,
-              color: isActive ? Colors.blueAccent : Colors.orangeAccent,
+              color: activeColor,
             ),
             const SizedBox(height: 10),
             Text(
