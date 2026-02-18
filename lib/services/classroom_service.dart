@@ -112,9 +112,8 @@ class ClassroomService {
         final dueDateMap = work['dueDate'] as Map<String, dynamic>?;
         final dueTimeMap = work['dueTime'] as Map<String, dynamic>?;
         final dueDate = _parseDueDate(dueDateMap, dueTimeMap);
-        if (dueDate == null) {
-          continue;
-        }
+        // If no due date, set to far future (year 2099) so it won't be marked as expired
+        final finalDueDate = dueDate ?? DateTime(2099, 12, 31, 23, 59);
 
         final title = (work['title'] ?? 'Untitled').toString();
         final workId = work['id']?.toString();
@@ -133,7 +132,7 @@ class ClassroomService {
           courseId: courseId,
           courseName: courseName,
           title: title,
-          dueDate: dueDate,
+          dueDate: finalDueDate,
           status: status,
         ));
       }

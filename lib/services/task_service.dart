@@ -46,6 +46,20 @@ class TaskService {
 
   Future<void> deleteTask(String taskId) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    
+    // Fetch task to check if it's from classroom
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('tasks')
+        .doc(taskId)
+        .get();
+    
+    final source = doc.get('source') ?? 'manual';
+    if (source == 'classroom') {
+      throw Exception('Cannot delete classroom tasks. Delete from Google Classroom instead.');
+    }
+    
     await _firestore
         .collection('users')
         .doc(uid)

@@ -25,23 +25,24 @@ class TaskDetailPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(task.subject, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 12),
-            Text('Due: ${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year} ${task.dueDate.hour.toString().padLeft(2,'0')}:${task.dueDate.minute.toString().padLeft(2,'0')}'),
+            Text('Due: ${task.isNoDeadline ? "ไม่มีกำหนด" : "${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year} ${task.dueDate.hour.toString().padLeft(2,'0')}:${task.dueDate.minute.toString().padLeft(2,'0')}"}'),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: task.status == TaskStatus.submitted
-                      ? null
-                      : () async {
-                          await service.updateStatus(task.id, TaskStatus.submitted);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as submitted')));
-                            Navigator.pop(context);
-                          }
-                        },
-                  child: const Text('Mark Submitted'),
-                ),
-                const SizedBox(width: 12),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: task.status == TaskStatus.submitted
+                    ? null
+                    : () async {
+                        await service.updateStatus(task.id, TaskStatus.submitted);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Marked as submitted')));
+                          Navigator.pop(context);
+                        }
+                      },
+                child: const Text('Mark Submitted'),
+              ),
+              const SizedBox(width: 12),
+              if (!task.isFromClassroom)
                 OutlinedButton(
                   onPressed: () async {
                     final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
@@ -63,8 +64,13 @@ class TaskDetailPage extends StatelessWidget {
                   },
                   child: const Text('Delete'),
                 )
-              ],
-            )
+              else
+                OutlinedButton(
+                  onPressed: null,
+                  child: const Text('Delete (Classroom)'),
+                )
+            ],
+          )
           ],
         ),
       ),

@@ -475,21 +475,30 @@ class _HomePageState extends State<HomePage> {
       {required TaskModel task,
       bool isOverdue = false}) {
     final isSubmitted = task.status == TaskStatus.submitted;
-    final statusColor = isSubmitted ? Colors.green : Colors.orangeAccent;
+    final isClosedDeadline = task.isExpired;
+    final statusColor = isClosedDeadline
+        ? Colors.grey
+        : isSubmitted
+            ? Colors.green
+            : Colors.orangeAccent;
     return InkWell(
-      onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) =>
-                  TaskDetailPage(task: task))),
+      onTap: isClosedDeadline
+          ? null
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      TaskDetailPage(task: task))),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isClosedDeadline ? Colors.grey[100] : Colors.white,
           borderRadius:
               BorderRadius.circular(25),
           border: Border.all(
-              color: Colors.black
-                  .withAlpha((0.05 * 255).round())),
+              color: isClosedDeadline
+                  ? Colors.grey.withAlpha((0.3 * 255).round())
+                  : Colors.black
+                      .withAlpha((0.05 * 255).round())),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -528,42 +537,44 @@ class _HomePageState extends State<HomePage> {
                                 vertical: 4),
                             decoration:
                                 BoxDecoration(
-                              color: statusColor
-                                .withAlpha((0.12 * 255).round()),
+                              color: isClosedDeadline
+                                  ? Colors.red.withAlpha((0.12 * 255).round())
+                                  : statusColor
+                                      .withAlpha((0.12 * 255).round()),
                               borderRadius:
                                   BorderRadius
                                       .circular(
                                           8),
                             ),
                             child: Text(
-                              isSubmitted
-                                ? "SUBMITTED"
-                                : "PENDING",
+                              isClosedDeadline
+                                ? "CLOSED"
+                                : isSubmitted
+                                    ? "SUBMITTED"
+                                    : "PENDING",
                               style: TextStyle(
-                              color: statusColor,
+                              color: isClosedDeadline
+                                  ? Colors.red
+                                  : statusColor,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          if (isOverdue)
+                          if (isClosedDeadline)
                             const Row(
                               children: [
                                 Icon(
-                                    Icons
-                                        .error_outline,
-                                    color: Colors
-                                        .redAccent,
+                                    Icons.lock_outline,
+                                    color: Colors.red,
                                     size: 14),
                                 SizedBox(
                                     width: 4),
                                 Text(
-                                    "OVERDUE",
+                                    "ปิดรับงานแล้ว",
                                     style: TextStyle(
-                                        color: Colors
-                                            .redAccent,
-                                        fontSize:
-                                            10,
+                                        color: Colors.red,
+                                        fontSize: 10,
                                         fontWeight:
                                             FontWeight
                                                 .bold)),
@@ -596,30 +607,34 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(
                               width: 5),
                           Text(
-                              "${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}",
+                              task.isNoDeadline
+                                  ? "ไม่มีกำหนด"
+                                  : "${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}",
                               style:
                                   const TextStyle(
                                       fontSize:
                                           12,
                                       color: Colors
                                           .grey)),
-                          const SizedBox(
-                              width: 15),
-                          const Icon(
-                              Icons.access_time,
-                              size: 14,
-                              color: Colors
-                                  .blueAccent),
-                          const SizedBox(
-                              width: 5),
-                          Text(
-                              "${task.dueDate.hour.toString().padLeft(2, '0')}:${task.dueDate.minute.toString().padLeft(2, '0')}",
-                              style:
-                                  const TextStyle(
-                                      fontSize:
-                                          12,
-                                      color: Colors
-                                          .grey)),
+                          if (!task.isNoDeadline) ...[
+                            const SizedBox(
+                                width: 15),
+                            const Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: Colors
+                                    .blueAccent),
+                            const SizedBox(
+                                width: 5),
+                            Text(
+                                "${task.dueDate.hour.toString().padLeft(2, '0')}:${task.dueDate.minute.toString().padLeft(2, '0')}",
+                                style:
+                                    const TextStyle(
+                                        fontSize:
+                                            12,
+                                        color: Colors
+                                            .grey)),
+                          ]
                         ],
                       )
                     ],
