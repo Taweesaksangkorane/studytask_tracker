@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'home_page.dart';
 import '../services/google_auth_service.dart';
 
@@ -11,10 +13,15 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
   bool isLoading = false;
+  bool obscurePassword = true;
 
   Future<void> signInWithGoogle() async {
     try {
@@ -72,6 +79,38 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> signInWithEmail() async {
+    // Redirect to Google Sign-In instead of email login
+    await signInWithGoogle();
+  }
+
+  Future<void> openGoogleSignUp() async {
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const WebViewPage(url: 'https://accounts.google.com/SignUp', title: 'Create Account'),
+      ),
+    );
+  }
+
+  Future<void> openGooglePasswordRecovery() async {
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const WebViewPage(url: 'https://accounts.google.com/signin/recovery', title: 'Recover Password'),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,13 +121,13 @@ class _LoginPageState extends State<LoginPage> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 20),
+                        SizedBox(height: constraints.maxHeight * 0.08),
                         Container(
                           width: 100,
                           height: 100,
@@ -105,51 +144,6 @@ class _LoginPageState extends State<LoginPage> {
                         const Text('Your intelligent academic command center.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
 
                         const SizedBox(height: 30),
-
-                        // Google login
-                        GestureDetector(
-                          onTap: signInWithGoogle,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 8, offset: const Offset(0, 4)),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
-                                      Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 4),
-                                      Text('Sync Google Classroom automatically', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_forward, color: Colors.blueAccent),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // OR divider
-                        Row(
-                          children: [
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                            const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                          ],
-                        ),
-
-                        const SizedBox(height: 22),
 
                         // Email
                         TextFormField(
@@ -191,8 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage())),
-                            child: const Text('Forgot Password?', style: TextStyle(color: Colors.blueGrey)),
+                            onPressed: isLoading ? null : openGooglePasswordRecovery,
+                            child: const Text('Forgot Password?', style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
                           ),
                         ),
 
@@ -216,22 +210,77 @@ class _LoginPageState extends State<LoginPage> {
                         ),
 
                         const SizedBox(height: 8),
-                        const Text('Email login allows manual task management only.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        const Text('All Google accounts can sync Classroom.', style: TextStyle(fontSize: 11, color: Colors.grey)),
 
                         const SizedBox(height: 24),
+
+                        // OR divider
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Colors.grey.shade300)),
+                            const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+                            Expanded(child: Divider(color: Colors.grey.shade300)),
+                          ],
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Google login button at bottom
+                        GestureDetector(
+                          onTap: isLoading ? null : signInWithGoogle,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 8, offset: const Offset(0, 4)),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                if (isLoading)
+                                  const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: const [
+                                      Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      SizedBox(height: 4),
+                                      Text('Fastest way to get started', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward, color: Colors.blueAccent),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('New here? '),
+                            const Text('New here? ', style: TextStyle(color: Colors.grey)),
                             GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())),
+                              onTap: isLoading ? null : openGoogleSignUp,
                               child: const Text('Create Account', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: constraints.maxHeight * 0.05),
                       ],
                     ),
                   ),
@@ -254,6 +303,40 @@ class _LoginPageState extends State<LoginPage> {
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+    );
+  }
+}
+
+class WebViewPage extends StatefulWidget {
+  final String url;
+  final String title;
+
+  const WebViewPage({required this.url, required this.title, super.key});
+
+  @override
+  State<WebViewPage> createState() => _WebViewPageState();
+}
+
+class _WebViewPageState extends State<WebViewPage> {
+  late WebViewController _webViewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        backgroundColor: Colors.blueAccent,
+        elevation: 0,
+      ),
+      body: WebViewWidget(controller: _webViewController),
     );
   }
 }
