@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
@@ -12,7 +13,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -23,17 +25,48 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> signInWithGoogle() async {
     try {
       setState(() => isLoading = true);
-      final account = await _googleSignIn.signIn();
-      if (!mounted) return;
-      if (account != null) {
+      final GoogleSignInAccount? googleAccount = await _googleSignIn.signIn();
+      if (googleAccount == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome ${account.displayName ?? account.email}')),
+          const SnackBar(content: Text('Google login cancelled')),
         );
+        return;
       }
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google login failed')),
+
+      final GoogleSignInAuthentication googleAuth = await googleAccount.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
+
+      await _firebaseAuth.signInWithCredential(credential);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Welcome ${googleAccount.displayName ?? googleAccount.email}')),
+      );
+      // TODO: Navigate to home page after successful login
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String errorMessage = 'Google login failed';
+      if (e.code == 'account-exists-with-different-credential') {
+        errorMessage = 'Account already exists with different credentials';
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = 'Invalid Google credentials';
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage = 'Google Sign-In is not enabled';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      print('Firebase Auth Error: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+      print('Google Sign-In Error: $e');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

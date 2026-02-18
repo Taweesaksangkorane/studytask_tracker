@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -8,38 +9,69 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool obscurePassword = true;
+  bool isLoading = false;
 
-  void signUp() {
+  Future<void> signUp() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("กรอกข้อมูลให้ครบทุกช่อง")),
-      );
+      _showSnack("กรอกข้อมูลให้ครบทุกช่อง");
+      return;
+    }
+
+    if (!email.contains("@")) {
+      _showSnack("รูปแบบ Email ไม่ถูกต้อง");
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("รหัสผ่านต้อง ≥ 6 ตัว")),
-      );
+      _showSnack("รหัสผ่านต้อง ≥ 6 ตัว");
       return;
     }
 
-    debugPrint("REGISTER → $email");
+    try {
+      setState(() => isLoading = true);
 
+      await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      await _firebaseAuth.currentUser?.updateDisplayName(name);
+
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Registration failed";
+
+      if (e.code == 'email-already-in-use') {
+        errorMessage = "Email นี้ถูกใช้แล้ว";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "รูปแบบ Email ไม่ถูกต้อง";
+      } else if (e.code == 'weak-password') {
+        errorMessage = "รหัสผ่านอ่อนเกินไป";
+      }
+
+      _showSnack(errorMessage);
+    } catch (e) {
+      _showSnack("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Welcome $name 🎉")),
+      SnackBar(content: Text(message)),
     );
-
-    // TODO: call API / Firebase / Backend
   }
 
   @override
@@ -66,149 +98,158 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
-        child: Column(
-            children: [
-              const SizedBox(height: 10),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
 
-              // --- LOGO ---
-              Center(
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.person_add_alt_1_rounded,
-                    size: 56,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              const Text(
-                "Create Account",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1C2E),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                "Join the elite community of\nsuccessful students.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 15),
-              ),
-
-              const SizedBox(height: 30),
-
-              // --- FULL NAME ---
-              _buildInputLabel("FULL NAME"),
-              _buildTextField(
-                "Your Name",
-                controller: nameController,
-              ),
-
-              const SizedBox(height: 15),
-
-              // --- EMAIL ---
-              _buildInputLabel("EMAIL ADDRESS"),
-              _buildTextField(
-                "you@example.com",
-                controller: emailController,
-              ),
-
-              const SizedBox(height: 15),
-
-              // --- PASSWORD ---
-              _buildInputLabel("SECURITY PASSWORD"),
-              _buildTextField(
-                "Create Password",
-                isPassword: true,
-                controller: passwordController,
-                suffix: IconButton(
-                  icon: Icon(
-                    obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: Colors.grey,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      obscurePassword = !obscurePassword;
-                    });
-                  },
-                ),
-                obscure: obscurePassword,
-              ),
-
-              const SizedBox(height: 30),
-
-              // --- SIGN UP BUTTON ---
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: signUp,
-                  icon: const Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    "Sign Up Now",
-                    style: TextStyle(
+                Center(
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      size: 56,
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 25),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Already have an account? ",
-                    style: TextStyle(color: Colors.grey),
+                const Text(
+                  "Create Account",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1C2E),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Text(
-                      "Sign In",
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Join the elite community of\nsuccessful students.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 15),
+                ),
+
+                const SizedBox(height: 30),
+
+                _buildInputLabel("FULL NAME"),
+                _buildTextField(
+                  "Your Name",
+                  controller: nameController,
+                ),
+
+                const SizedBox(height: 15),
+
+                _buildInputLabel("EMAIL ADDRESS"),
+                _buildTextField(
+                  "you@example.com",
+                  controller: emailController,
+                ),
+
+                const SizedBox(height: 15),
+
+                _buildInputLabel("SECURITY PASSWORD"),
+                _buildTextField(
+                  "Create Password",
+                  isPassword: true,
+                  controller: passwordController,
+                  obscure: obscurePassword,
+                  suffix: IconButton(
+                    icon: Icon(
+                      obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: isLoading ? null : signUp,
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline,
+                            color: Colors.white),
+                    label: const Text(
+                      "Sign Up Now",
                       style: TextStyle(
-                        color: Colors.blueAccent,
+                        color: Colors.white,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 40),
-              _buildSecureFooter(),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Already have an account? ",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Text(
+                        "Sign In",
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
-        ),
-      );
+
+          if (isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.05),
+            ),
+        ],
+      ),
+    );
   }
 
   // ---------------- Widgets ----------------
@@ -243,57 +284,15 @@ class _RegisterPageState extends State<RegisterPage> {
       obscureText: isPassword ? obscure : false,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(
-          color: Colors.blueGrey[200],
-          fontWeight: FontWeight.w600,
-        ),
         filled: true,
         fillColor: const Color(0xFFF8FAFC),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         suffixIcon: suffix,
-      ),
-    );
-  }
-
-  Widget _buildSecureFooter() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueAccent.withAlpha((0.1 * 255).round())),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.verified_user_outlined,
-                  size: 14, color: Colors.teal),
-              SizedBox(width: 5),
-              Text(
-                "SECURE ENROLLMENT",
-                style: TextStyle(
-                  color: Colors.blueAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            "STUDENT DATA PROTECTION ENABLED BY DEFAULT",
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
       ),
     );
   }

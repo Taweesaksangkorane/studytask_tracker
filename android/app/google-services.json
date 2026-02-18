@@ -12,7 +12,20 @@
           "package_name": "com.example.studytask_tracker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "145410987696-39cvakpc4qlld3aecfg5hk1ehhf0o8rt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.studytask_tracker",
+            "certificate_hash": "2b12fcb2cc6add6b0d373e8e2edc7108e66bf83e"
+          }
+        },
+        {
+          "client_id": "145410987696-d7npuqu2kv11lfhtd64n0nq85qceokvg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "145410987696-d7npuqu2kv11lfhtd64n0nq85qceokvg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
