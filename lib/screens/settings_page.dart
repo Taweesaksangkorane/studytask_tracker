@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'login_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -51,7 +52,12 @@ class SettingsPage extends StatelessWidget {
             title: const Text('Sign out'),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
-              if (context.mounted) Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              }
             },
           ),
           ListTile(

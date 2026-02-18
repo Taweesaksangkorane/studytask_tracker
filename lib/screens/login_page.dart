@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'register_page.dart';
-import 'forgot_password_page.dart';
 import 'home_page.dart';
 import '../services/google_auth_service.dart';
 
@@ -14,15 +11,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
   bool isLoading = false;
-  bool obscurePassword = true;
 
   Future<void> signInWithGoogle() async {
     try {
@@ -78,27 +70,6 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
-  }
-
-  Future<void> signInWithEmail() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Logged in as ${emailController.text.trim()}')),
-    );
-    // Navigate to home page after email login
-    if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
-  }
-
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
   }
 
   @override

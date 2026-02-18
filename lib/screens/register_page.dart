@@ -63,10 +63,19 @@ class _RegisterPageState extends State<RegisterPage> {
       } else if (e.code == 'invalid-email') {
         errorMessage = "รูปแบบ Email ไม่ถูกต้อง";
       } else if (e.code == 'weak-password') {
-        errorMessage = "รหัสผ่านอ่อนเกินไป";
+        errorMessage = "รหัสผ่านอ่อนเกินไป (ต้องมีตัวพิมพ์ใหญ่ ตัวเลข สัญลักษณ์)";
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage = "Email/Password authentication ยังไม่เปิดใช้งาน";
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = "ข้อมูลไม่ถูกต้อง";
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = "พยายามซ้ำเกินไป กรุณารอสักครู่";
+      } else {
+        errorMessage = "เกิดข้อผิดพลาด: ${e.code} - ${e.message}";
       }
 
       _showSnack(errorMessage);
+      print('Firebase Error: ${e.code} - ${e.message}');
     } catch (e) {
       _showSnack("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
