@@ -6,6 +6,7 @@ import '../services/google_auth_service.dart';
 import 'task_detail_page.dart';
 import 'settings_page.dart';
 import 'new_task_page.dart';
+import 'calendar_page.dart';
 
 enum TaskFilter { all, submitted, pending }
 
@@ -182,19 +183,25 @@ class _HomePageState extends State<HomePage> {
         ),
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                        color:
-                            Colors.black.withAlpha((0.05 * 255).round()),
-                        blurRadius: 10)
-                  ]),
-              child: const Icon(Icons.calendar_today_outlined,
-                  color: Colors.blueAccent),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CalendarPage()),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                          color:
+                              Colors.black.withAlpha((0.05 * 255).round()),
+                          blurRadius: 10)
+                    ]),
+                child: const Icon(Icons.calendar_today_outlined,
+                    color: Colors.blueAccent),
+              ),
             ),
             const SizedBox(width: 10),
             const CircleAvatar(
