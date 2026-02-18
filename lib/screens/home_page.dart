@@ -63,8 +63,6 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 20),
-                  _buildAISuggestion(),
-                  const SizedBox(height: 20),
                   _buildSyncBar(context),
                   const SizedBox(height: 25),
                   Row(
