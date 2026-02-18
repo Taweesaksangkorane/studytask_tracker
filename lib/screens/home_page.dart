@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/classroom_service.dart';
 import 'task_detail_page.dart';
 import 'settings_page.dart';
 import 'new_task_page.dart';
 
-class HomePage extends StatelessWidget {
+enum TaskFilter { all, submitted, pending }
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  TaskFilter _filter = TaskFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +34,16 @@ class HomePage extends StatelessWidget {
 
             final tasks = snapshot.data ?? [];
             final total = tasks.length;
-            final submitted = tasks.where((t) => t.status == TaskStatus.submitted).length;
+            final submitted =
+                tasks.where((t) => t.status == TaskStatus.submitted).length;
             final pending = total - submitted;
+            final filteredTasks = _filter == TaskFilter.all
+              ? tasks
+              : tasks
+                .where((t) => _filter == TaskFilter.submitted
+                  ? t.status == TaskStatus.submitted
+                  : t.status == TaskStatus.pending)
+                .toList();
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(25.0),
@@ -43,30 +61,54 @@ class HomePage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatCard("ทั้งหมด", total.toString(), Icons.grid_view_rounded, true),
-                      _buildStatCard("ส่งแล้ว", submitted.toString(), Icons.send_rounded, false),
-                      _buildStatCard("ยังไม่ส่ง", pending.toString(), Icons.access_time_filled, false),
+                      _buildStatCard("ทั้งหมด", total.toString(),
+                          Icons.grid_view_rounded,
+                          _filter == TaskFilter.all, () {
+                        setState(() => _filter = TaskFilter.all);
+                      }),
+                      _buildStatCard("ส่งแล้ว", submitted.toString(),
+                          Icons.send_rounded,
+                          _filter == TaskFilter.submitted, () {
+                        setState(() => _filter = TaskFilter.submitted);
+                      }),
+                      _buildStatCard("ยังไม่ส่ง", pending.toString(),
+                          Icons.access_time_filled,
+                          _filter == TaskFilter.pending, () {
+                        setState(() => _filter = TaskFilter.pending);
+                      }),
                     ],
                   ),
                   const SizedBox(height: 30),
                   const Text(
                     "LATEST TASKS",
-                    style: TextStyle(color: Colors.blueGrey, letterSpacing: 1.5, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.blueGrey,
+                        letterSpacing: 1.5,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  if (tasks.isEmpty)
+                  if (filteredTasks.isEmpty)
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40),
-                        child: Text("ยังไม่มีงาน", style: TextStyle(color: Colors.grey)),
+                        child: Text("ยังไม่มีงาน",
+                            style: TextStyle(color: Colors.grey)),
                       ),
                     )
                   else
-                    ...tasks.map((task) {
-                      final isOverdue = task.status == TaskStatus.pending && task.dueDate.isBefore(DateTime.now());
+                    ...filteredTasks.map((task) {
+                      final isOverdue =
+                          task.status == TaskStatus.pending &&
+                              task.dueDate.isBefore(DateTime.now());
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 15),
-                        child: _buildTaskCard(context, task: task, isOverdue: isOverdue),
+                        child: _buildTaskCard(
+                          context,
+                          task: task,
+                          isOverdue: isOverdue,
+                        ),
                       );
                     }).toList(),
                   const SizedBox(height: 80),
@@ -78,12 +120,14 @@ class HomePage extends StatelessWidget {
       ),
       bottomNavigationBar: _buildBottomNav(context),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewTaskPage())),
+        onPressed: () => Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const NewTaskPage())),
         backgroundColor: Colors.blueAccent,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 35, color: Colors.white),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -95,23 +139,46 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(5)),
-              child: const Text("STUDENT SPACE", style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(5)),
+              child: const Text("STUDENT SPACE",
+                  style: TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 5),
-            const Text("งานของคุณ", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E))),
+            const Text("งานของคุณ",
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1C2E))),
           ],
         ),
         Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 10)]),
-              child: const Icon(Icons.calendar_today_outlined, color: Colors.blueAccent),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                        color:
+                            Colors.black.withAlpha((0.05 * 255).round()),
+                        blurRadius: 10)
+                  ]),
+              child: const Icon(Icons.calendar_today_outlined,
+                  color: Colors.blueAccent),
             ),
             const SizedBox(width: 10),
-            const CircleAvatar(radius: 25, backgroundImage: NetworkImage('https://placeholder.com/150')),
+            const CircleAvatar(
+                radius: 25,
+                backgroundImage:
+                    NetworkImage('https://placeholder.com/150')),
           ],
         )
       ],
@@ -121,13 +188,20 @@ class HomePage extends StatelessWidget {
   Widget _buildAISuggestion() {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.orange.withAlpha((0.1 * 255).round()))),
+      decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+              color: Colors.orange.withAlpha((0.1 * 255).round()))),
       child: const Row(
         children: [
           Icon(Icons.auto_awesome, color: Colors.orange, size: 20),
           SizedBox(width: 10),
           Expanded(
-            child: Text("ลุย Mobile App Report เริ่มวางแผนล่วงหน้าไว้ก่อนนะ สู้ๆ ครับ คนเก่งทำได้อยู่แล้ว!", style: TextStyle(fontSize: 12, color: Colors.brown)),
+            child: Text(
+                "ลุย Mobile App Report เริ่มวางแผนล่วงหน้าไว้ก่อนนะ สู้ๆ ครับ คนเก่งทำได้อยู่แล้ว!",
+                style:
+                    TextStyle(fontSize: 12, color: Colors.brown)),
           ),
         ],
       ),
@@ -137,25 +211,64 @@ class HomePage extends StatelessWidget {
   Widget _buildSyncBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.black.withAlpha((0.05 * 255).round()))),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: Colors.black.withAlpha((0.05 * 255).round()))),
       child: Row(
         children: [
-          const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.school, color: Colors.white, size: 20)),
+          const CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.school,
+                  color: Colors.white, size: 20)),
           const SizedBox(width: 12),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Classroom Sync", style: TextStyle(fontWeight: FontWeight.bold)),
-              Text("UPDATED AT 14:59", style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Text("Classroom Sync",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("UPDATED AT 14:59",
+                  style:
+                      TextStyle(fontSize: 10, color: Colors.grey)),
             ],
           ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Syncing...')));
+            onPressed: () async {
+              final service = ClassroomService();
+              final taskService = TaskService();
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text("Syncing Classroom...")),
+                );
+
+                final classroomTasks =
+                    await service.fetchCourseWorkTasks();
+                final savedCount = await taskService
+                    .upsertClassroomTasks(classroomTasks);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: savedCount == 0
+                        ? const Text("ไม่พบงานที่มีวันกำหนดส่ง")
+                        : Text("นำเข้างาน $savedCount รายการ"),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content:
+                          Text("Sync failed: $e")),
+                );
+              }
             },
             icon: const Icon(Icons.sync, size: 16),
-            label: const Text("SYNC NOW", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            label: const Text("SYNC NOW",
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
           )
         ],
       ),
@@ -169,39 +282,76 @@ class HomePage extends StatelessWidget {
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none),
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String count, IconData icon, bool isActive) {
-    return Container(
-      width: 100,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        border: isActive ? Border.all(color: Colors.blueAccent, width: 2) : Border.all(color: Colors.transparent),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: isActive ? Colors.blueAccent : Colors.orangeAccent),
-          const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskCard(BuildContext context, {required TaskModel task, bool isOverdue = false}) {
+  Widget _buildStatCard(
+    String label,
+    String count,
+    IconData icon,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return InkWell(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TaskDetailPage(task: task))),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(25),
       child: Container(
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.black.withAlpha((0.05 * 255).round())),
+          border: isActive
+              ? Border.all(color: Colors.blueAccent, width: 2)
+              : Border.all(color: Colors.transparent),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isActive ? Colors.blueAccent : Colors.orangeAccent,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskCard(BuildContext context,
+      {required TaskModel task,
+      bool isOverdue = false}) {
+    final isSubmitted = task.status == TaskStatus.submitted;
+    final statusColor = isSubmitted ? Colors.green : Colors.orangeAccent;
+    return InkWell(
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) =>
+                  TaskDetailPage(task: task))),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+              BorderRadius.circular(25),
+          border: Border.all(
+              color: Colors.black
+                  .withAlpha((0.05 * 255).round())),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -209,56 +359,129 @@ class HomePage extends StatelessWidget {
               Container(
                 width: 6,
                 decoration: const BoxDecoration(
-                  color: Colors.orangeAccent,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(25), bottomLeft: Radius.circular(25)),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                      topLeft:
+                          Radius.circular(25),
+                      bottomLeft:
+                          Radius.circular(25)),
+                ),
+                child: Container(
+                  color: statusColor,
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding:
+                      const EdgeInsets.all(20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets
+                                .symmetric(
+                                horizontal: 10,
+                                vertical: 4),
+                            decoration:
+                                BoxDecoration(
+                              color: statusColor
+                                .withAlpha((0.12 * 255).round()),
+                              borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                          8),
+                            ),
                             child: Text(
-                              task.status == TaskStatus.submitted ? "SUBMITTED" : "PENDING",
-                              style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                              isSubmitted
+                                ? "SUBMITTED"
+                                : "PENDING",
+                              style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           if (isOverdue)
                             const Row(
                               children: [
-                                Icon(Icons.error_outline, color: Colors.redAccent, size: 14),
-                                SizedBox(width: 4),
-                                Text("OVERDUE", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                                Icon(
+                                    Icons
+                                        .error_outline,
+                                    color: Colors
+                                        .redAccent,
+                                    size: 14),
+                                SizedBox(
+                                    width: 4),
+                                Text(
+                                    "OVERDUE",
+                                    style: TextStyle(
+                                        color: Colors
+                                            .redAccent,
+                                        fontSize:
+                                            10,
+                                        fontWeight:
+                                            FontWeight
+                                                .bold)),
                               ],
-                            ),
-                          if (task.status == TaskStatus.submitted)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(5)),
-                              child: const Text("SYNCED", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      Text(task.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text(task.subject, style: const TextStyle(color: Colors.blueGrey, fontSize: 14)),
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                          height: 10),
+                      Text(task.title,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight:
+                                  FontWeight.bold)),
+                      Text(task.subject,
+                          style: const TextStyle(
+                              color:
+                                  Colors.blueGrey,
+                              fontSize: 14)),
+                      const SizedBox(
+                          height: 15),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 14, color: Colors.blueAccent),
-                          const SizedBox(width: 5),
-                          Text("${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(width: 15),
-                          const Icon(Icons.access_time, size: 14, color: Colors.blueAccent),
-                          const SizedBox(width: 5),
-                          Text("${task.dueDate.hour.toString().padLeft(2, '0')}:${task.dueDate.minute.toString().padLeft(2, '0')}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Icon(
+                              Icons
+                                  .calendar_today,
+                              size: 14,
+                              color: Colors
+                                  .blueAccent),
+                          const SizedBox(
+                              width: 5),
+                          Text(
+                              "${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}",
+                              style:
+                                  const TextStyle(
+                                      fontSize:
+                                          12,
+                                      color: Colors
+                                          .grey)),
+                          const SizedBox(
+                              width: 15),
+                          const Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors
+                                  .blueAccent),
+                          const SizedBox(
+                              width: 5),
+                          Text(
+                              "${task.dueDate.hour.toString().padLeft(2, '0')}:${task.dueDate.minute.toString().padLeft(2, '0')}",
+                              style:
+                                  const TextStyle(
+                                      fontSize:
+                                          12,
+                                      color: Colors
+                                          .grey)),
                         ],
                       )
                     ],
@@ -277,26 +500,36 @@ class HomePage extends StatelessWidget {
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment:
+            MainAxisAlignment.spaceAround,
         children: [
-          GestureDetector(
-            onTap: () {},
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.home_filled, color: Colors.blueAccent),
-                Text("หน้าหลัก", style: TextStyle(color: Colors.blueAccent, fontSize: 10)),
-              ],
-            ),
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.home_filled,
+                  color: Colors.blueAccent),
+              Text("หน้าหลัก",
+                  style: TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 10)),
+            ],
           ),
           const SizedBox(width: 40),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        const SettingsPage())),
             child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.settings_outlined, color: Colors.grey),
-                Text("ตั้งค่า", style: TextStyle(color: Colors.grey, fontSize: 10)),
+                Icon(Icons.settings_outlined,
+                    color: Colors.grey),
+                Text("ตั้งค่า",
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 10)),
               ],
             ),
           ),

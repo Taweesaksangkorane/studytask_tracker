@@ -1,20 +1,20 @@
 {
   "project_info": {
-    "project_number": "145410987696",
-    "project_id": "studytask-tracker",
-    "storage_bucket": "studytask-tracker.firebasestorage.app"
+    "project_number": "192014714672",
+    "project_id": "studytask-tracker-bbfb3",
+    "storage_bucket": "studytask-tracker-bbfb3.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:145410987696:android:16603d4f3d42de1cc90d75",
+        "mobilesdk_app_id": "1:192014714672:android:26910181757f6a9b3c6af5",
         "android_client_info": {
           "package_name": "com.example.studytask_tracker"
         }
       },
       "oauth_client": [
         {
-          "client_id": "145410987696-39cvakpc4qlld3aecfg5hk1ehhf0o8rt.apps.googleusercontent.com",
+          "client_id": "192014714672-5mtdgu8e34t4v1brov3chmrtl2u3lb61.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.studytask_tracker",
@@ -22,21 +22,28 @@
           }
         },
         {
-          "client_id": "145410987696-d7npuqu2kv11lfhtd64n0nq85qceokvg.apps.googleusercontent.com",
+          "client_id": "192014714672-f1a48avqo0bd5e5ll2jl6vh4ojdo3256.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI"
+          "current_key": "AIzaSyAeNT050GKSY_q7_7RazpFrHgIo_IgU60M"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "145410987696-d7npuqu2kv11lfhtd64n0nq85qceokvg.apps.googleusercontent.com",
+              "client_id": "192014714672-f1a48avqo0bd5e5ll2jl6vh4ojdo3256.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "192014714672-cpie6dpdo8vu7d5jb7abju3159mvg00n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.studytaskTracker"
+              }
             }
           ]
         }

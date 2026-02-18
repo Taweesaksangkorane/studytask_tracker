@@ -9,45 +9,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI',
-    appId: '1:145410987696:android:16603d4f3d42de1cc90d75',
-    messagingSenderId: '145410987696',
-    projectId: 'studytask-tracker',
-    storageBucket: 'studytask-tracker.firebasestorage.app',
+    apiKey: 'AIzaSyAeNT050GKSY_q7_7RazpFrHgIo_IgU60M',
+    appId: '1:192014714672:android:26910181757f6a9b3c6af5',
+    messagingSenderId: '192014714672',
+    projectId: 'studytask-tracker-bbfb3',
+    storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI',
-    appId: '1:145410987696:ios:placeholder',
-    messagingSenderId: '145410987696',
-    projectId: 'studytask-tracker',
-    storageBucket: 'studytask-tracker.firebasestorage.app',
+    apiKey: 'AIzaSyBoLV0jcV0LoIVNqdqAEajz7Tr0UjpYvTM',
+    appId: '1:192014714672:ios:7bb18dfcba55a0233c6af5',
+    messagingSenderId: '192014714672',
+    projectId: 'studytask-tracker-bbfb3',
+    storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
     iosBundleId: 'com.example.studytaskTracker',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI',
-    appId: '1:145410987696:macos:placeholder',
-    messagingSenderId: '145410987696',
-    projectId: 'studytask-tracker',
-    storageBucket: 'studytask-tracker.firebasestorage.app',
+    apiKey: 'AIzaSyBoLV0jcV0LoIVNqdqAEajz7Tr0UjpYvTM',
+    appId: '1:192014714672:ios:7bb18dfcba55a0233c6af5',
+    messagingSenderId: '192014714672',
+    projectId: 'studytask-tracker-bbfb3',
+    storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
     iosBundleId: 'com.example.studytaskTracker',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI',
-    appId: '1:145410987696:windows:placeholder',
-    messagingSenderId: '145410987696',
-    projectId: 'studytask-tracker',
-    storageBucket: 'studytask-tracker.firebasestorage.app',
+    apiKey: 'AIzaSyBz85WiZNh5B3_jEpVMwVgjckXdz2Is5sg',
+    appId: '1:192014714672:web:6c6d746bb836675a3c6af5',
+    messagingSenderId: '192014714672',
+    projectId: 'studytask-tracker-bbfb3',
+    authDomain: 'studytask-tracker-bbfb3.firebaseapp.com',
+    storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
+    measurementId: 'G-Q1BMHQVW2W',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAp0_d_-HbbgyWsdhFHFy1O2m2ST6wrODI',
-    appId: '1:145410987696:web:placeholder',
-    messagingSenderId: '145410987696',
-    projectId: 'studytask-tracker',
-    storageBucket: 'studytask-tracker.firebasestorage.app',
+    apiKey: 'AIzaSyBz85WiZNh5B3_jEpVMwVgjckXdz2Is5sg',
+    appId: '1:192014714672:web:159298ba0998dca73c6af5',
+    messagingSenderId: '192014714672',
+    projectId: 'studytask-tracker-bbfb3',
+    authDomain: 'studytask-tracker-bbfb3.firebaseapp.com',
+    storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
+    measurementId: 'G-ZEE1Y6ES0Q',
   );
 
   static const FirebaseOptions linux = FirebaseOptions(

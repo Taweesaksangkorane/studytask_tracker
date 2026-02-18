@@ -14,7 +14,14 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/classroom.courses.readonly',
+      'https://www.googleapis.com/auth/classroom.course-work.readonly',
+      'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+    ],
+  );
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   final TextEditingController emailController = TextEditingController();
@@ -78,15 +85,48 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> signInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Logged in as ${emailController.text.trim()}')),
-    );
-    // Navigate to home page after email login
-    if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text;
+      
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logged in as $email')),
+      );
+      // Navigate to home page after email login
+      if (!mounted) return;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String errorMessage = 'Login failed';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found with this email';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Incorrect password';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (e.code == 'user-disabled') {
+        errorMessage = 'User account is disabled';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      print('Firebase Auth Error: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+      print('Sign-In Error: $e');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   @override
