@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
 import '../services/classroom_service.dart';
+import '../services/google_auth_service.dart';
 import 'task_detail_page.dart';
 import 'settings_page.dart';
 import 'new_task_page.dart';
@@ -243,33 +244,85 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               final service = ClassroomService();
               final taskService = TaskService();
+              
+              // Show loading indicator
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text("กำลังซิงค์ Classroom..."),
+                    ],
+                  ),
+                  duration: Duration(seconds: 30),
+                ),
+              );
+
               try {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text("Syncing Classroom...")),
-                );
+                final classroomTasks = await service.fetchCourseWorkTasks();
+                final savedCount = await taskService.upsertClassroomTasks(classroomTasks);
 
                 if (mounted) {
                   setState(() => _lastSyncAt = DateTime.now());
                 }
 
-                final classroomTasks =
-                  await service.fetchCourseWorkTasks();
-                final savedCount = await taskService
-                  .upsertClassroomTasks(classroomTasks);
-
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: savedCount == 0
-                        ? const Text("ไม่พบงานที่มีวันกำหนดส่ง")
-                        : Text("นำเข้างาน $savedCount รายการ"),
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
+                        Text(savedCount == 0
+                            ? "ไม่พบงานที่มีวันกำหนดส่ง"
+                            : "นำเข้างาน $savedCount รายการสำเร็จ"),
+                      ],
+                    ),
+                    backgroundColor: Colors.white,
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).clearSnackBars();
+                
+                // Parse error message
+                String errorMsg = "ซิงค์ไม่สำเร็จ";
+                if (e.toString().contains('กรุณาเข้าสู่ระบบ')) {
+                  errorMsg = "กรุณาล็อกอินด้วย Google ก่อนซิงค์";
+                } else if (e.toString().contains('Failed to load')) {
+                  errorMsg = "ไม่สามารถเชื่อมต่อ Classroom ได้";
+                } else {
+                  errorMsg = "เกิดข้อผิดพลาด: ${e.toString()}";
+                }
+                
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content:
-                          Text("Sync failed: $e")),
+                    content: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(errorMsg)),
+                      ],
+                    ),
+                    backgroundColor: Colors.white,
+                    behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: "ลองอีกครั้ง",
+                      onPressed: () {},
+                    ),
+                  ),
                 );
               }
             },

@@ -48,6 +48,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
       await _firebaseAuth.currentUser?.updateDisplayName(name);
 
+      if (!mounted) return;
+      _showSnack("สร้างบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ");
+      
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!mounted) return;
+      Navigator.pop(context);
+
     } on FirebaseAuthException catch (e) {
       String errorMessage = "Registration failed";
 
@@ -101,28 +108,28 @@ class _RegisterPageState extends State<RegisterPage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 20.0),
             child: Column(
               children: [
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 Center(
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
                       color: Colors.blueAccent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
                       Icons.person_add_alt_1_rounded,
-                      size: 56,
+                      size: 44,
                       color: Colors.white,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 25),
+                const SizedBox(height: 16),
 
                 const Text(
                   "Create Account",
@@ -133,7 +140,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 const Text(
                   "Join the elite community of\nsuccessful students.",
@@ -141,7 +148,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: TextStyle(color: Colors.grey, fontSize: 15),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 22),
 
                 _buildInputLabel("FULL NAME"),
                 _buildTextField(
@@ -149,7 +156,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: nameController,
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 12),
 
                 _buildInputLabel("EMAIL ADDRESS"),
                 _buildTextField(
@@ -157,7 +164,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: emailController,
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 12),
 
                 _buildInputLabel("SECURITY PASSWORD"),
                 _buildTextField(
@@ -180,7 +187,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 SizedBox(
                   width: double.infinity,
@@ -216,7 +223,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +245,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
               ],
             ),
           ),

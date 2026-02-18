@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'google_auth_service.dart';
 
 class ClassroomTask {
   final String id;
@@ -34,20 +35,20 @@ class ClassroomTask {
 }
 
 class ClassroomService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'https://www.googleapis.com/auth/classroom.courses.readonly',
-      'https://www.googleapis.com/auth/classroom.course-work.readonly',
-      'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
-    ],
-  );
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   Future<GoogleSignInAuthentication> _getAuth() async {
-    final GoogleSignInAccount? account = await _googleSignIn.signInSilently();
+    // Try silent sign-in first
+    GoogleSignInAccount? account = _googleAuthService.currentAccount;
+    account ??= await _googleAuthService.signInSilently();
+
+    // If no account, request sign-in
+    if (account == null) {
+      account = await _googleAuthService.signIn();
+    }
 
     if (account == null) {
-      throw Exception('User not signed in');
+      throw Exception('กรุณาเข้าสู่ระบบด้วย Google ก่อนซิงค์ Classroom');
     }
 
     return account.authentication;
