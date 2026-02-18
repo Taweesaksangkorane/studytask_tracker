@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
 import '../services/classroom_service.dart';
@@ -23,10 +24,13 @@ class _HomePageState extends State<HomePage> {
   final TaskService _taskService = TaskService();
   List<TaskModel> _allTasks = [];
   bool _isLoading = true;
+  String? _profileImageUrl;
+  String? _userInitials;
 
   @override
   void initState() {
     super.initState();
+    _loadProfileData();
     _taskService.getTasks().listen((tasks) {
       if (mounted) {
         setState(() {
@@ -35,6 +39,20 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
+  }
+
+  void _loadProfileData() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      if (mounted) {
+        setState(() {
+          _profileImageUrl = user.photoURL;
+          _userInitials = (user.displayName?.isNotEmpty ?? false)
+              ? user.displayName!.substring(0, 1).toUpperCase()
+              : 'U';
+        });
+      }
+    }
   }
 
   List<TaskModel> get _filteredTasks {
@@ -204,10 +222,18 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(width: 10),
-            const CircleAvatar(
+            CircleAvatar(
                 radius: 25,
-                backgroundImage:
-                    NetworkImage('https://placeholder.com/150')),
+                backgroundImage: _profileImageUrl != null
+                    ? NetworkImage(_profileImageUrl!)
+                    : null,
+                child: _profileImageUrl == null
+                    ? Text(_userInitials ?? 'U',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white))
+                    : null),
           ],
         )
       ],
