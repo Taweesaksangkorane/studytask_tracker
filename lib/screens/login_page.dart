@@ -13,15 +13,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
   bool isLoading = false;
-  bool obscurePassword = true;
 
   Future<void> signInWithGoogle() async {
     try {
@@ -79,11 +74,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> signInWithEmail() async {
-    // Redirect to Google Sign-In instead of email login
-    await signInWithGoogle();
-  }
-
   Future<void> openGoogleSignUp() async {
     if (!mounted) return;
     Navigator.push(
@@ -105,204 +95,141 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(height: constraints.maxHeight * 0.08),
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.blueAccent,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 56),
-                        ),
-
-                        const SizedBox(height: 20),
-                        const Text('StudyTask', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E))),
-                        const SizedBox(height: 8),
-                        const Text('Your intelligent academic command center.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-
-                        const SizedBox(height: 30),
-
-                        // Email
-                        TextFormField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [AutofillHints.email],
-                          textInputAction: TextInputAction.next,
-                          decoration: _inputDecoration('you@example.com'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Please enter your email';
-                            if (!value.contains('@')) return 'Invalid email';
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Password
-                        TextFormField(
-                          controller: passwordController,
-                          obscureText: obscurePassword,
-                          autofillHints: const [AutofillHints.password],
-                          textInputAction: TextInputAction.done,
-                          decoration: _inputDecoration('Password').copyWith(
-                            suffixIcon: IconButton(
-                              icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
-                              onPressed: () => setState(() => obscurePassword = !obscurePassword),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Please enter your password';
-                            if (value.length < 6) return 'Minimum 6 characters';
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: isLoading ? null : openGooglePasswordRecovery,
-                            child: const Text('Forgot Password?', style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // Sign In
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: isLoading ? null : signInWithEmail,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: isLoading
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-                        const Text('All Google accounts can sync Classroom.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-
-                        const SizedBox(height: 24),
-
-                        // OR divider
-                        Row(
-                          children: [
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                            const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                          ],
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Google login button at bottom
-                        GestureDetector(
-                          onTap: isLoading ? null : signInWithGoogle,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withAlpha((0.05 * 255).round()), blurRadius: 8, offset: const Offset(0, 4)),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                if (isLoading)
-                                  const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-                                    ),
-                                  )
-                                else
-                                  const Icon(Icons.g_mobiledata, size: 30, color: Colors.red),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
-                                      Text('Continue with Google', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      SizedBox(height: 4),
-                                      Text('Fastest way to get started', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_forward, color: Colors.blueAccent),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('New here? ', style: TextStyle(color: Colors.grey)),
-                            GestureDetector(
-                              onTap: isLoading ? null : openGoogleSignUp,
-                              child: const Text('Create Account', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: constraints.maxHeight * 0.05),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [Colors.blue.shade400, Colors.blue.shade700],
           ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: SizedBox(
+                  height: constraints.maxHeight,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top decorative space
+                      SizedBox(height: constraints.maxHeight * 0.1),
 
-          if (isLoading)
-            Container(color: Colors.black.withAlpha((0.1 * 255).round()), child: const Center(child: CircularProgressIndicator())),
-        ],
+                      // Logo and title section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(28),
+                                boxShadow: [BoxShadow(blurRadius: 20, color: Colors.black26)],
+                              ),
+                              child: const Icon(Icons.menu_book_rounded, color: Color(0xFF1A1C2E), size: 64),
+                            ),
+                            const SizedBox(height: 28),
+                            const Text(
+                              'StudyTask',
+                              style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Your intelligent academic command center',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 16, color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Sign in section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [BoxShadow(blurRadius: 30, color: Colors.black26)],
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Get Started',
+                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Sign in with Google to sync your Classroom',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 56,
+                                    child: ElevatedButton.icon(
+                                      onPressed: isLoading ? null : signInWithGoogle,
+                                      icon: isLoading
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A1C2E)),
+                                              ),
+                                            )
+                                          : const Icon(Icons.g_mobiledata, size: 26),
+                                      label: const Text(
+                                        'Continue with Google',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue.shade600,
+                                        foregroundColor: Colors.white,
+                                        elevation: 4,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      '🔒 Your data is secure with Google Sign-In authentication',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 12, color: Color(0xFF1A1C2E)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Bottom space
+                      SizedBox(height: constraints.maxHeight * 0.05),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF8FAFC),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
     );
   }
 }
