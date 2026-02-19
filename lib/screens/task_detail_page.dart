@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
 
@@ -15,19 +17,49 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   var _attachments = <PlatformFile>[];
-  var _submittedFiles = <Map<String, dynamic>>[]; // Files from Firestore
+  var _submittedFiles = <Map<String, dynamic>>[];
+  late TaskStatus _currentStatus;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    _currentStatus = widget.task.status; // Initialize from widget
     _animationController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _animationController.forward();
     
-    // Load submitted files if task is already submitted
-    if (widget.task.submittedFiles.isNotEmpty) {
-      _submittedFiles = widget.task.submittedFiles;
+    // Load latest task data from Firestore
+    _loadTaskData();
+  }
+
+  Future<void> _loadTaskData() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || !mounted) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('tasks')
+          .doc(widget.task.id)
+          .get();
+
+      if (mounted && doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final submittedFilesList = (data['submittedFiles'] ?? []) as List;
+        final statusStr = data['status'] ?? 'pending';
+        final newStatus = statusStr == 'submitted' 
+            ? TaskStatus.submitted 
+            : TaskStatus.pending;
+        
+        setState(() {
+          _currentStatus = newStatus; // Update current status from Firestore
+          _submittedFiles = submittedFilesList.cast<Map<String, dynamic>>();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading task data: $e');
     }
   }
 
@@ -380,7 +412,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           ),
                         ),
                       )
-                    else if (widget.task.status == TaskStatus.submitted && _submittedFiles.isNotEmpty)
+                    else if (_currentStatus == TaskStatus.submitted && _submittedFiles.isNotEmpty)
                       // Show submitted files
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,7 +575,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                     child: ElevatedButton.icon(
                       onPressed: _attachments.isNotEmpty && !_isSubmitting ? () => _submitTask(context) : null,
                       icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : const Icon(Icons.check),
-                      label: Text(widget.task.status == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
+                      label: Text(_currentStatus == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _attachments.isNotEmpty ? Colors.green : Colors.grey,
                         foregroundColor: Colors.white,
@@ -753,6 +785,11 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       // Submit with file metadata
       await TaskService().submitTask(widget.task.id, fileMetadata);
       if (!mounted) return;
+      
+      setState(() {
+        _currentStatus = TaskStatus.submitted;
+        _submittedFiles = fileMetadata;
+      });
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
