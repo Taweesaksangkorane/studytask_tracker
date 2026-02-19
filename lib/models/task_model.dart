@@ -7,6 +7,7 @@ class TaskModel {
   final DateTime dueDate;
   final TaskStatus status;
   final String source; // 'classroom' or 'manual'
+  final String description;
 
   TaskModel({
     required this.id,
@@ -15,6 +16,7 @@ class TaskModel {
     required this.dueDate,
     required this.status,
     this.source = 'manual',
+    this.description = '',
   });
 
   factory TaskModel.fromFirestore(String id, Map<String, dynamic> data) {
@@ -29,6 +31,7 @@ class TaskModel {
           ? TaskStatus.submitted
           : TaskStatus.pending,
       source: data['source'] ?? 'manual',
+      description: data['description'] ?? '',
     );
   }
 
@@ -39,6 +42,7 @@ class TaskModel {
       'dueDate': dueDate.toIso8601String(),
       'status': status.name,
       'source': source,
+      'description': description,
     };
   }
 
