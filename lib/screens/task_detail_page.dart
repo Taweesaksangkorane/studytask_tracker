@@ -15,6 +15,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   var _attachments = <PlatformFile>[];
+  var _submittedFiles = <Map<String, dynamic>>[]; // Files from Firestore
   bool _isSubmitting = false;
 
   @override
@@ -23,6 +24,11 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     _animationController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _animationController.forward();
+    
+    // Load submitted files if task is already submitted
+    if (widget.task.submittedFiles.isNotEmpty) {
+      _submittedFiles = widget.task.submittedFiles;
+    }
   }
 
   @override
@@ -32,16 +38,35 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xls', 'xlsx'],
-    );
-    
-    if (result != null) {
-      setState(() {
-        _attachments.addAll(result.files);
-      });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.any,
+      );
+      
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _attachments.addAll(result.files);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ ${result.files.length} file(s) added'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -355,7 +380,80 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           ),
                         ),
                       )
-                    else
+                    else if (widget.task.status == TaskStatus.submitted && _submittedFiles.isNotEmpty)
+                      // Show submitted files
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_submittedFiles.length} file(s) submitted',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ..._submittedFiles.map((fileData) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            fileData['name'] ?? 'Unknown',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          Text(
+                                            '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      )
+                    else if (_attachments.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -643,20 +741,35 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     setState(() => _isSubmitting = true);
 
     try {
-      await TaskService().updateStatus(widget.task.id, TaskStatus.submitted);
+      // Convert file data to metadata (name, size, extension)
+      final fileMetadata = _attachments
+          .map((file) => {
+                'name': file.name,
+                'size': file.size,
+                'extension': file.extension ?? 'unknown',
+              })
+          .toList();
+
+      // Submit with file metadata
+      await TaskService().submitTask(widget.task.id, fileMetadata);
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Task submitted successfully'),
+          content: Text('✓ Task submitted successfully'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
         ),
       );
-      Navigator.pop(context);
+      
+      // Keep page open to show files, user presses back to go home
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

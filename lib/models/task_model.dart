@@ -8,6 +8,7 @@ class TaskModel {
   final TaskStatus status;
   final String source; // 'classroom' or 'manual'
   final String description;
+  final List<Map<String, dynamic>> submittedFiles;
 
   TaskModel({
     required this.id,
@@ -17,6 +18,7 @@ class TaskModel {
     required this.status,
     this.source = 'manual',
     this.description = '',
+    this.submittedFiles = const [],
   });
 
   factory TaskModel.fromFirestore(String id, Map<String, dynamic> data) {
@@ -32,6 +34,9 @@ class TaskModel {
           : TaskStatus.pending,
       source: data['source'] ?? 'manual',
       description: data['description'] ?? '',
+      submittedFiles: List<Map<String, dynamic>>.from(
+        (data['submittedFiles'] ?? []) as List,
+      ),
     );
   }
 
@@ -43,6 +48,7 @@ class TaskModel {
       'status': status.name,
       'source': source,
       'description': description,
+      'submittedFiles': submittedFiles,
     };
   }
 

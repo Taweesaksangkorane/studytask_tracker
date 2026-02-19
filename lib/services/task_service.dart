@@ -44,6 +44,19 @@ class TaskService {
         .update({'status': status.name});
   }
 
+  Future<void> submitTask(String taskId, List<Map<String, dynamic>> fileMetadata) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('tasks')
+        .doc(taskId)
+        .update({
+          'status': 'submitted',
+          'submittedFiles': fileMetadata,
+        });
+  }
+
   Future<void> deleteTask(String taskId) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     
