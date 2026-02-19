@@ -65,13 +65,25 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
 
   String _getStatusLabel() {
     if (widget.task.isExpired) {
-      return '! Overdue';
+      return 'Overdue';
     }
     switch (widget.task.status) {
       case TaskStatus.submitted:
-        return '✓ Submitted';
+        return 'Submitted';
       default:
-        return '○ In Progress';
+        return 'In Progress';
+    }
+  }
+
+  IconData _getStatusIcon() {
+    if (widget.task.isExpired) {
+      return Icons.warning_rounded;
+    }
+    switch (widget.task.status) {
+      case TaskStatus.submitted:
+        return Icons.check_circle_rounded;
+      default:
+        return Icons.pending_rounded;
     }
   }
 
@@ -82,16 +94,33 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 2,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.blue.shade600, Colors.blue.shade400],
+              ),
+            ),
+          ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.blue),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Task Details',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
           ),
           actions: [
             if (!widget.task.isFromClassroom)
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: const Icon(Icons.delete_outline, color: Colors.white),
                 onPressed: () => _showDeleteDialog(context),
               ),
           ],
@@ -101,82 +130,182 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status Badge
+              // Main Info Card
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _getStatusColor().withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _getStatusColor(), width: 1.5),
-                ),
-                child: Text(
-                  _getStatusLabel(),
-                  style: TextStyle(
-                    color: _getStatusColor(),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white, Colors.blue.shade50],
                   ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            _getStatusColor().withValues(alpha: 0.8),
+                            _getStatusColor(),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getStatusColor().withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getStatusIcon(),
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getStatusLabel(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Title
+                    Text(
+                      widget.task.title,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Title
-              Text(
-                widget.task.title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
+              // Subject Card
+              _buildEnhancedCard(
+                icon: Icons.book_rounded,
+                iconColor: Colors.blue.shade600,
+                iconBg: Colors.blue.shade50,
+                label: 'Subject',
+                value: widget.task.subject,
               ),
               const SizedBox(height: 12),
 
-              // Subject and Due Date
+              // Due Date & Time
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _buildInfoCard(
-                      icon: Icons.book,
-                      label: 'Subject',
-                      value: widget.task.subject,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildInfoCard(
-                      icon: Icons.calendar_today,
+                    child: _buildEnhancedCard(
+                      icon: Icons.calendar_month_rounded,
+                      iconColor: Colors.orange.shade600,
+                      iconBg: Colors.orange.shade50,
                       label: 'Due Date',
                       value: widget.task.isNoDeadline
                           ? 'No deadline'
                           : '${widget.task.dueDate.day}/${widget.task.dueDate.month}/${widget.task.dueDate.year}',
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildEnhancedCard(
+                      icon: Icons.access_time_rounded,
+                      iconColor: Colors.purple.shade600,
+                      iconBg: Colors.purple.shade50,
+                      label: 'Due Time',
+                      value: widget.task.isNoDeadline
+                          ? '--:--'
+                          : '${widget.task.dueDate.hour.toString().padLeft(2, '0')}:${widget.task.dueDate.minute.toString().padLeft(2, '0')}',
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // Due Time
-              if (!widget.task.isNoDeadline) ...[
-                _buildInfoCard(
-                  icon: Icons.schedule,
-                  label: 'Due Time',
-                  value: '${widget.task.dueDate.hour.toString().padLeft(2, '0')}:${widget.task.dueDate.minute.toString().padLeft(2, '0')}',
-                ),
-                const SizedBox(height: 12),
-              ],
+              const SizedBox(height: 16),
 
               // Description
-              _buildSectionCard(
-                title: 'Description',
-                icon: Icons.description,
-                child: Text(
-                  widget.task.description.isEmpty ? 'No description' : widget.task.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF475569),
-                    height: 1.6,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white, Colors.grey.shade50],
                   ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.description_rounded,
+                            size: 20,
+                            color: Colors.indigo.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      widget.task.description.isEmpty ? 'No description available' : widget.task.description,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF475569),
+                        height: 1.7,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -383,6 +512,62 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
             value,
             style: const TextStyle(
               fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 24, color: iconColor),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E293B),
             ),
