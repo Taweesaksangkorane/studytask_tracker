@@ -38,17 +38,32 @@ class ClassroomService {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   Future<GoogleSignInAuthentication> _getAuth() async {
-    // Try silent sign-in first
+    // Get current account or try silent sign-in
     GoogleSignInAccount? account = _googleAuthService.currentAccount;
     account ??= await _googleAuthService.signInSilently();
 
-    // If no account, request sign-in
-    if (account == null) {
-      account = await _googleAuthService.signIn();
-    }
-
+    // If no account, throw exception - user needs to login first
     if (account == null) {
       throw Exception('กรุณาเข้าสู่ระบบด้วย Google ก่อนซิงค์ Classroom');
+    }
+
+    // Request classroom scopes (this will prompt only if not already granted)
+    final requiredScopes = [
+      'https://www.googleapis.com/auth/classroom.courses.readonly',
+      'https://www.googleapis.com/auth/classroom.course-work.readonly',
+      'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+    ];
+
+    try {
+      final googleSignIn = _googleAuthService.instance;
+      final success = await googleSignIn.requestScopes(requiredScopes);
+      if (!success) {
+        throw Exception('กรุณาอนุญาตการเข้าถึง Google Classroom');
+      }
+    } catch (e) {
+      // If requestScopes fails, it might be already granted or network issue
+      // Continue anyway and let API call fail if scopes truly missing
+      print('Scope request warning: $e');
     }
 
     return account.authentication;
