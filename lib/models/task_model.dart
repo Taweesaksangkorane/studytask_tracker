@@ -9,6 +9,7 @@ class TaskModel {
   final String source; // 'classroom' or 'manual'
   final String description;
   final List<Map<String, dynamic>> submittedFiles;
+  final String? classroomLink;
 
   TaskModel({
     required this.id,
@@ -19,6 +20,7 @@ class TaskModel {
     this.source = 'manual',
     this.description = '',
     this.submittedFiles = const [],
+    this.classroomLink,
   });
 
   factory TaskModel.fromFirestore(String id, Map<String, dynamic> data) {
@@ -37,6 +39,7 @@ class TaskModel {
       submittedFiles: List<Map<String, dynamic>>.from(
         (data['submittedFiles'] ?? []) as List,
       ),
+      classroomLink: data['classroomLink'],
     );
   }
 
@@ -49,6 +52,7 @@ class TaskModel {
       'source': source,
       'description': description,
       'submittedFiles': submittedFiles,
+      'classroomLink': classroomLink,
     };
   }
 

@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
 
@@ -21,11 +22,13 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   var _submittedFiles = <Map<String, dynamic>>[];
   late TaskStatus _currentStatus;
   bool _isSubmitting = false;
+  String? _classroomLink;
 
   @override
   void initState() {
     super.initState();
     _currentStatus = widget.task.status; // Initialize from widget
+    _classroomLink = widget.task.classroomLink;
     _animationController = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _animationController.forward();
@@ -64,6 +67,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
         setState(() {
           _currentStatus = newStatus;
           _submittedFiles = files;
+          _classroomLink = data['classroomLink'] as String? ?? _classroomLink;
         });
       }
     } catch (e) {
@@ -140,6 +144,38 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   bool get _isExpired {
     if (_currentStatus == TaskStatus.submitted) return false;
     return widget.task.isExpired;
+  }
+
+  bool get _isClassroomTask {
+    return widget.task.isFromClassroom;
+  }
+
+  Future<void> _openClassroomAssignment() async {
+    const classroomHomeUrl = 'https://classroom.google.com/u/0/h';
+    final link = (_classroomLink ?? '').trim();
+    final urlToLaunch = link.isEmpty ? classroomHomeUrl : link;
+    
+    try {
+      final uri = Uri.parse(urlToLaunch);
+      final canLaunch = await canLaunchUrl(uri);
+      
+      if (!canLaunch) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open Google Classroom')),
+          );
+        }
+        return;
+      }
+
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   Color _getStatusColor() {
@@ -408,6 +444,59 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                 child: Builder(
                   builder: (context) {
                     debugPrint('🔍 UI State: status=$_currentStatus, submittedFiles=${_submittedFiles.length}, attachments=${_attachments.length}');
+                    if (_isClassroomTask) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.school, color: Colors.blue.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _currentStatus == TaskStatus.submitted
+                                        ? 'Submitted in Google Classroom'
+                                        : 'Submit this assignment in Google Classroom',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Files from Classroom are not synced yet.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            onPressed: _openClassroomAssignment,
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Go to Classroom'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade500,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -627,17 +716,29 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _attachments.isNotEmpty && !_isSubmitting ? () => _submitTask(context) : null,
-                      icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : const Icon(Icons.check),
-                      label: Text(_currentStatus == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _attachments.isNotEmpty ? Colors.green : Colors.grey,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
+                    child: _isClassroomTask
+                        ? ElevatedButton.icon(
+                            onPressed: _openClassroomAssignment,
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Go to Classroom'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade500,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: _attachments.isNotEmpty && !_isSubmitting ? () => _submitTask(context) : null,
+                            icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : const Icon(Icons.check),
+                            label: Text(_currentStatus == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _attachments.isNotEmpty ? Colors.green : Colors.grey,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
