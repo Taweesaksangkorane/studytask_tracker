@@ -86,16 +86,41 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
+        withReadStream: true,
       );
       
       if (result != null && result.files.isNotEmpty) {
+        // Filter out duplicate files
+        final newFiles = <PlatformFile>[];
+        final existingNames = _attachments.map((f) => f.path).toSet();
+        
+        for (final file in result.files) {
+          if (!existingNames.contains(file.path)) {
+            newFiles.add(file);
+            existingNames.add(file.path);
+          }
+        }
+        
+        if (newFiles.isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⚠ All selected files are already added'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+        
         setState(() {
-          _attachments.addAll(result.files);
+          _attachments.addAll(newFiles);
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✓ ${result.files.length} file(s) added'),
+              content: Text('✓ ${newFiles.length} file(s) added'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 2),
             ),
@@ -533,6 +558,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             const SizedBox(height: 12),
                             ..._submittedFiles.map((fileData) {
                               final filePath = fileData['path'] as String?;
+                              final submittedTime = fileData['submittedTime'] as String?;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: InkWell(
@@ -563,12 +589,24 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                                                   color: Color(0xFF1E293B),
                                                 ),
                                               ),
-                                              Text(
-                                                '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey.shade600,
-                                                ),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey.shade600,
+                                                    ),
+                                                  ),
+                                                  if (submittedTime != null) ...[const SizedBox(width: 8), Text(
+                                                    '• $submittedTime',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.grey.shade500,
+                                                    ),
+                                                  ),
+                                                  ],
+                                                ],
                                               ),
                                             ],
                                           ),
@@ -654,7 +692,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           }).toList(),
                         ],
                       )
-                    else
+                    else if (_attachments.isEmpty && _currentStatus != TaskStatus.submitted)
                       // Show upload box when not submitted and no attachments
                       GestureDetector(
                         onTap: _pickFile,
@@ -692,19 +730,46 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             ],
                           ),
                         ),
+                      )
+                    else if (_currentStatus == TaskStatus.submitted)
+                      // Show message for submitted tasks
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info, color: Colors.amber.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Task submitted. Click "Resubmit" to replace with new files.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.amber.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(Icons.add),
-                      label: Text(_attachments.isEmpty ? 'Choose File' : 'Add Another File'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade500,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    if (_currentStatus != TaskStatus.submitted) ...[
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _pickFile,
+                        icon: const Icon(Icons.add),
+                        label: Text(_attachments.isEmpty ? 'Choose File' : 'Add Another File'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade500,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 );
                   },
@@ -929,13 +994,15 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     setState(() => _isSubmitting = true);
 
     try {
-      // Convert file data to metadata (name, size, extension)
+      // Convert file data to metadata (name, size, extension, submittedTime)
+      final submittedTime = DateTime.now();
       final fileMetadata = _attachments
           .map((file) => {
                 'name': file.name,
                 'size': file.size,
                 'extension': file.extension ?? 'unknown',
                 'path': file.path,
+                'submittedTime': '${submittedTime.toString().substring(0, 19)}',
               })
           .toList();
 
