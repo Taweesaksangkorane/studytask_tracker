@@ -53,13 +53,20 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
             ? TaskStatus.submitted 
             : TaskStatus.pending;
         
+        // Properly convert Firestore list to List<Map<String, dynamic>>
+        final files = submittedFilesList
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        
+        debugPrint('✅ Loaded: status=$statusStr, files=${files.length}');
+        
         setState(() {
-          _currentStatus = newStatus; // Update current status from Firestore
-          _submittedFiles = submittedFilesList.cast<Map<String, dynamic>>();
+          _currentStatus = newStatus;
+          _submittedFiles = files;
         });
       }
     } catch (e) {
-      debugPrint('Error loading task data: $e');
+      debugPrint('❌ Error loading task: $e');
     }
   }
 
@@ -108,11 +115,16 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     });
   }
 
+  bool get _isExpired {
+    if (_currentStatus == TaskStatus.submitted) return false;
+    return widget.task.isExpired;
+  }
+
   Color _getStatusColor() {
-    if (widget.task.isExpired) {
+    if (_isExpired) {
       return Colors.red;
     }
-    switch (widget.task.status) {
+    switch (_currentStatus) {
       case TaskStatus.submitted:
         return Colors.green;
       default:
@@ -121,10 +133,10 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   }
 
   String _getStatusLabel() {
-    if (widget.task.isExpired) {
+    if (_isExpired) {
       return 'Overdue';
     }
-    switch (widget.task.status) {
+    switch (_currentStatus) {
       case TaskStatus.submitted:
         return 'Submitted';
       default:
@@ -133,10 +145,10 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   }
 
   IconData _getStatusIcon() {
-    if (widget.task.isExpired) {
+    if (_isExpired) {
       return Icons.warning_rounded;
     }
-    switch (widget.task.status) {
+    switch (_currentStatus) {
       case TaskStatus.submitted:
         return Icons.check_circle_rounded;
       default:
@@ -371,48 +383,13 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
               _buildSectionCard(
                 title: 'Submission Proof',
                 icon: Icons.check_circle_outline,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_attachments.isEmpty)
-                      GestureDetector(
-                        onTap: _pickFile,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.blue.shade300,
-                              width: 2,
-                              style: BorderStyle.solid,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.blue.shade50,
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.blue),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Upload Proof Documents',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'PDF, Word, Image, Excel',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else if (_currentStatus == TaskStatus.submitted && _submittedFiles.isNotEmpty)
+                child: Builder(
+                  builder: (context) {
+                    debugPrint('🔍 UI State: status=$_currentStatus, submittedFiles=${_submittedFiles.length}, attachments=${_attachments.length}');
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_currentStatus == TaskStatus.submitted)
                       // Show submitted files
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +406,9 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                                 Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '${_submittedFiles.length} file(s) submitted',
+                                  _submittedFiles.isEmpty
+                                      ? 'Task submitted (no files)'
+                                      : '${_submittedFiles.length} file(s) submitted',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -439,50 +418,52 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          ..._submittedFiles.map((fileData) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            fileData['name'] ?? 'Unknown',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: Color(0xFF1E293B),
+                          if (_submittedFiles.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            ..._submittedFiles.map((fileData) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              fileData['name'] ?? 'Unknown',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color: Color(0xFF1E293B),
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
+                                            Text(
+                                              '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade600,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
+                              );
+                            }).toList(),
+                          ],
                         ],
                       )
                     else if (_attachments.isNotEmpty)
@@ -550,6 +531,45 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             );
                           }).toList(),
                         ],
+                      )
+                    else
+                      // Show upload box when not submitted and no attachments
+                      GestureDetector(
+                        onTap: _pickFile,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: Colors.blue.shade300,
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.blue.shade50,
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.blue),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Upload Proof Documents',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'PDF, Word, Image, Excel',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
@@ -564,6 +584,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                       ),
                     ),
                   ],
+                );
+                  },
                 ),
               ),
               const SizedBox(height: 20),
@@ -782,13 +804,18 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
               })
           .toList();
 
+      debugPrint('📤 Submitting ${fileMetadata.length} files...');
+
       // Submit with file metadata
       await TaskService().submitTask(widget.task.id, fileMetadata);
       if (!mounted) return;
       
+      debugPrint('✅ Submitted successfully');
+      
       setState(() {
         _currentStatus = TaskStatus.submitted;
         _submittedFiles = fileMetadata;
+        _attachments.clear(); // Clear temporary attachments
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
