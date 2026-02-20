@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/task_model.dart';
@@ -113,6 +114,27 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     setState(() {
       _attachments.removeAt(index);
     });
+  }
+
+  Future<void> _openFilePath(String? path) async {
+    if (path == null || path.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File path not available on this device')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await OpenFilex.open(path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to open file: $e')),
+        );
+      }
+    }
   }
 
   bool get _isExpired {
@@ -421,44 +443,51 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           if (_submittedFiles.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             ..._submittedFiles.map((fileData) {
+                              final filePath = fileData['path'] as String?;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              fileData['name'] ?? 'Unknown',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF1E293B),
+                                child: InkWell(
+                                  onTap: () => _openFilePath(filePath),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                fileData['name'] ?? 'Unknown',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF1E293B),
+                                                ),
                                               ),
-                                            ),
-                                            Text(
-                                              '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
+                                              Text(
+                                                '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.open_in_new, size: 18, color: Colors.grey.shade600),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -484,48 +513,52 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             PlatformFile file = entry.value;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(_getFileIcon(file.extension ?? ''), size: 24, color: Colors.blue),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            file.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: Color(0xFF1E293B),
+                              child: InkWell(
+                                onTap: () => _openFilePath(file.path),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(_getFileIcon(file.extension ?? ''), size: 24, color: Colors.blue),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              file.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color: Color(0xFF1E293B),
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            '${(file.size / 1024).toStringAsFixed(2)} KB',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
+                                            Text(
+                                              '${(file.size / 1024).toStringAsFixed(2)} KB',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade600,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    IconButton(
-                                      onPressed: () => _removeAttachment(index),
-                                      icon: const Icon(Icons.close, size: 20, color: Colors.red),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ],
+                                      IconButton(
+                                        onPressed: () => _removeAttachment(index),
+                                        icon: const Icon(Icons.close, size: 20, color: Colors.red),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -801,6 +834,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                 'name': file.name,
                 'size': file.size,
                 'extension': file.extension ?? 'unknown',
+                'path': file.path,
               })
           .toList();
 
