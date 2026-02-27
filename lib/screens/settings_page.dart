@@ -9,8 +9,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
-  bool _darkModeEnabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -53,29 +51,6 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildAccountCard(user),
             const SizedBox(height: 24),
 
-            // Preferences Section
-            _buildSectionTitle('Preferences'),
-            _buildSettingTile(
-              icon: Icons.notifications_outlined,
-              title: 'Notifications',
-              subtitle: 'Get reminders for upcoming tasks',
-              trailing: Switch(
-                value: _notificationsEnabled,
-                onChanged: (value) {
-                  setState(() => _notificationsEnabled = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildSettingTile(
-              icon: Icons.dark_mode_outlined,
-              title: 'Dark Mode',
-              subtitle: 'Coming soon',
-              trailing: Switch(
-                value: _darkModeEnabled,
-                onChanged: null,
-              ),
-            ),
             const SizedBox(height: 24),
 
             // About Section
@@ -87,12 +62,6 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () => _showAboutDialog(),
             ),
             const SizedBox(height: 12),
-            _buildSettingTile(
-              icon: Icons.privacy_tip_outlined,
-              title: 'Privacy Policy',
-              subtitle: 'Learn about your data',
-              onTap: () => _showPrivacyDialog(),
-            ),
             const SizedBox(height: 24),
 
             // Danger Zone
@@ -273,60 +242,6 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPrivacyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Your Privacy Matters',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'StudyTask respects your privacy. We collect only necessary information to provide you with a better experience.',
-                style: TextStyle(height: 1.5),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'Data Usage:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text('• Google account information for authentication'),
-              Text('• Your tasks and submissions stored securely'),
-              Text('• Classroom data synced with your permission'),
-              SizedBox(height: 12),
-              Text(
-                'We never share your personal data with third parties.',
-                style: TextStyle(
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Accept'),
           ),
         ],
       ),
