@@ -1,4 +1,5 @@
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Singleton GoogleSignIn instance shared across the app
 class GoogleAuthService {
@@ -11,6 +12,9 @@ class GoogleAuthService {
   GoogleAuthService._internal();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb
+        ? '192014714672-f1a48avqo0bd5e5ll2jl6vh4ojdo3256.apps.googleusercontent.com'
+        : null,
     scopes: [
       'email',
       'https://www.googleapis.com/auth/classroom.courses.readonly',
