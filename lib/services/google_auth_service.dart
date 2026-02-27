@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Singleton GoogleSignIn instance shared across the app
 class GoogleAuthService {
   static final GoogleAuthService _instance = GoogleAuthService._internal();
+  String? _webAccessToken;
+  String? _webAccessTokenUid;
   
   factory GoogleAuthService() {
     return _instance;
@@ -24,6 +26,20 @@ class GoogleAuthService {
   );
 
   GoogleSignIn get instance => _googleSignIn;
+
+  String? get webAccessToken => _webAccessToken;
+
+  String? getValidWebAccessToken(String? currentUid) {
+    if (currentUid == null || _webAccessTokenUid != currentUid) {
+      return null;
+    }
+    return _webAccessToken;
+  }
+
+  void setWebAccessToken(String? token, {String? uid}) {
+    _webAccessToken = token;
+    _webAccessTokenUid = uid;
+  }
 
   /// Get current GoogleSignIn account
   GoogleSignInAccount? get currentAccount => _googleSignIn.currentUser;
@@ -59,6 +75,8 @@ class GoogleAuthService {
 
   /// Sign out
   Future<void> signOut() async {
+    _webAccessToken = null;
+    _webAccessTokenUid = null;
     await _googleSignIn.signOut();
   }
 }

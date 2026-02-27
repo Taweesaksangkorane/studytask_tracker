@@ -16,21 +16,57 @@ class TaskService {
   }
 
   Future<int> upsertClassroomTasks(List<ClassroomTask> tasks) async {
-    if (tasks.isEmpty) {
-      return 0;
-    }
-
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final currentUser = FirebaseAuth.instance.currentUser!;
+    final uid = currentUser.uid;
+    final email = currentUser.email ?? '';
     final batch = _firestore.batch();
+    var writeCount = 0;
     final taskCollection =
         _firestore.collection('users').doc(uid).collection('tasks');
+    final syncedDocIds = tasks.map((task) => task.docId).toSet();
 
     for (final task in tasks) {
       final docRef = taskCollection.doc(task.docId);
-      batch.set(docRef, task.toMap(), SetOptions(merge: true));
+      batch.set(
+        docRef,
+        {
+          ...task.toMap(),
+          'classroomOwnerUid': uid,
+          'classroomOwnerEmail': email,
+        },
+        SetOptions(merge: true),
+      );
+      writeCount++;
     }
 
-    await batch.commit();
+    if (writeCount > 0) {
+      await batch.commit();
+    }
+
+    final classroomDocs = await taskCollection
+        .where('source', isEqualTo: 'classroom')
+        .get();
+
+    final deleteBatch = _firestore.batch();
+    var deleteCount = 0;
+
+    for (final doc in classroomDocs.docs) {
+      final data = doc.data();
+      final ownerUid = (data['classroomOwnerUid'] ?? '').toString();
+      final isNotInCurrentSync = !syncedDocIds.contains(doc.id);
+      final isDifferentOwner = ownerUid.isNotEmpty && ownerUid != uid;
+      final isLegacyWithoutOwner = ownerUid.isEmpty;
+
+      if (isNotInCurrentSync || isDifferentOwner || isLegacyWithoutOwner) {
+        deleteBatch.delete(doc.reference);
+        deleteCount++;
+      }
+    }
+
+    if (deleteCount > 0) {
+      await deleteBatch.commit();
+    }
+
     return tasks.length;
   }
 

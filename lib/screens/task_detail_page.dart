@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -121,6 +122,18 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   }
 
   Future<void> _openFilePath(String? path) async {
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening files is not available on web. Files will be submitted successfully.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+    
     if (path == null || path.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -649,7 +662,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: InkWell(
-                                onTap: () => _openFilePath(file.path),
+                                onTap: kIsWeb ? () => _openFilePath(null) : () => _openFilePath(file.path),
                                 borderRadius: BorderRadius.circular(8),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1037,7 +1050,6 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                 'name': file.name,
                 'size': file.size,
                 'extension': file.extension ?? 'unknown',
-                'path': file.path,
               })
           .toList();
 

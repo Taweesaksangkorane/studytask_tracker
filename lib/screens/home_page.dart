@@ -21,6 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TaskFilter _filter = TaskFilter.all;
   DateTime? _lastSyncAt;
+  bool _isSyncing = false;
   final TaskService _taskService = TaskService();
   List<TaskModel> _allTasks = [];
   bool _isLoading = true;
@@ -339,9 +340,21 @@ class _HomePageState extends State<HomePage> {
           ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: () async {
+            onPressed: _isSyncing ? null : () async {
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser == null) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('กรุณาเข้าสู่ระบบก่อนซิงค์ Classroom')),
+                );
+                return;
+              }
+
               final service = ClassroomService();
               final taskService = TaskService();
+              if (mounted) {
+                setState(() => _isSyncing = true);
+              }
               
               // Show loading indicator
               if (!mounted) return;
@@ -426,10 +439,20 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 );
+              } finally {
+                if (mounted) {
+                  setState(() => _isSyncing = false);
+                }
               }
             },
-            icon: const Icon(Icons.sync, size: 16),
-            label: const Text("SYNC NOW",
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync, size: 16),
+            label: Text(_isSyncing ? "SYNCING..." : "SYNC NOW",
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold)),

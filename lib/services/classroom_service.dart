@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'google_auth_service.dart';
 
@@ -43,6 +45,47 @@ class ClassroomTask {
 class ClassroomService {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
 
+  Future<String> _getAccessToken() async {
+    if (kIsWeb) {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('กรุณาเข้าสู่ระบบด้วยบัญชีของคุณก่อนซิงค์ Classroom');
+      }
+
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      final cachedToken = _googleAuthService.getValidWebAccessToken(currentUid);
+      if (cachedToken != null && cachedToken.isNotEmpty) {
+        return cachedToken;
+      }
+
+      final provider = GoogleAuthProvider()
+        ..addScope('https://www.googleapis.com/auth/classroom.courses.readonly')
+        ..addScope('https://www.googleapis.com/auth/classroom.course-work.readonly')
+        ..addScope('https://www.googleapis.com/auth/classroom.coursework.me.readonly')
+        ..addScope('https://www.googleapis.com/auth/classroom.student-submissions.me.readonly')
+        ..setCustomParameters({'prompt': 'consent'});
+
+      final userCredential = await currentUser.reauthenticateWithPopup(provider);
+      final credential = userCredential.credential;
+      if (credential is OAuthCredential && credential.accessToken != null) {
+        _googleAuthService.setWebAccessToken(
+          credential.accessToken,
+          uid: currentUser.uid,
+        );
+        return credential.accessToken!;
+      }
+
+      throw Exception('ไม่สามารถรับสิทธิ์ Google Classroom ได้ กรุณาลองใหม่อีกครั้ง');
+    }
+
+    final auth = await _getAuth();
+    final accessToken = auth.accessToken;
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception('ไม่พบ access token จาก Google account');
+    }
+    return accessToken;
+  }
+
   Future<GoogleSignInAuthentication> _getAuth() async {
     // Get current account or try silent sign-in
     GoogleSignInAccount? account = _googleAuthService.currentAccount;
@@ -76,19 +119,17 @@ class ClassroomService {
   }
 
   Future<List<dynamic>> fetchCourses() async {
-    final auth = await _getAuth();
-    return _fetchCoursesWithAuth(auth);
+    final accessToken = await _getAccessToken();
+    return _fetchCoursesWithAccessToken(accessToken);
   }
 
-  Future<List<dynamic>> _fetchCoursesWithAuth(
-    GoogleSignInAuthentication auth,
-  ) async {
+  Future<List<dynamic>> _fetchCoursesWithAccessToken(String accessToken) async {
     final response = await http.get(
       Uri.parse(
         'https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE',
       ),
       headers: {
-        'Authorization': 'Bearer ${auth.accessToken}',
+        'Authorization': 'Bearer $accessToken',
       },
     );
 
@@ -101,11 +142,11 @@ class ClassroomService {
   }
 
   Future<List<ClassroomTask>> fetchCourseWorkTasks() async {
-    final auth = await _getAuth();
+    final accessToken = await _getAccessToken();
     final headers = {
-      'Authorization': 'Bearer ${auth.accessToken}',
+      'Authorization': 'Bearer $accessToken',
     };
-    final courses = await _fetchCoursesWithAuth(auth);
+    final courses = await _fetchCoursesWithAccessToken(accessToken);
     final tasks = <ClassroomTask>[];
 
     for (final course in courses) {

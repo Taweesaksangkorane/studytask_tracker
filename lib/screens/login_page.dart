@@ -32,9 +32,17 @@ class _LoginPageState extends State<LoginPage> {
           ..addScope('https://www.googleapis.com/auth/classroom.courses.readonly')
           ..addScope('https://www.googleapis.com/auth/classroom.course-work.readonly')
           ..addScope('https://www.googleapis.com/auth/classroom.coursework.me.readonly')
+          ..addScope('https://www.googleapis.com/auth/classroom.student-submissions.me.readonly')
           ..setCustomParameters({'prompt': 'select_account'});
 
         final userCredential = await _firebaseAuth.signInWithPopup(provider);
+        final credential = userCredential.credential;
+        if (credential is OAuthCredential && credential.accessToken != null) {
+          _googleAuthService.setWebAccessToken(
+            credential.accessToken,
+            uid: userCredential.user?.uid,
+          );
+        }
         final user = userCredential.user;
 
         if (!mounted) return;
