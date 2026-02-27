@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'home_page.dart';
 import '../services/google_auth_service.dart';
@@ -22,8 +23,28 @@ class _LoginPageState extends State<LoginPage> {
     try {
       setState(() => isLoading = true);
       
-      // Sign out first to allow account selection
+      // Sign out completely from both Firebase and Google
+      await _firebaseAuth.signOut();
       await _googleAuthService.signOut();
+
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider()
+          ..addScope('https://www.googleapis.com/auth/classroom.courses.readonly')
+          ..addScope('https://www.googleapis.com/auth/classroom.course-work.readonly')
+          ..addScope('https://www.googleapis.com/auth/classroom.coursework.me.readonly')
+          ..setCustomParameters({'prompt': 'select_account'});
+
+        final userCredential = await _firebaseAuth.signInWithPopup(provider);
+        final user = userCredential.user;
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Welcome ${user?.displayName ?? user?.email ?? 'User'}')),
+        );
+        if (!mounted) return;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+        return;
+      }
       
       final GoogleSignInAccount? googleAccount = await _googleAuthService.signIn();
       if (googleAccount == null) {
