@@ -11,6 +11,7 @@ class ClassroomTask {
   final DateTime dueDate;
   final String status;
   final String? classroomLink;
+  final String? description;
 
   const ClassroomTask({
     required this.id,
@@ -20,6 +21,7 @@ class ClassroomTask {
     required this.dueDate,
     required this.status,
     this.classroomLink,
+    this.description,
   });
 
   String get docId => 'classroom_${courseId}_$id';
@@ -33,6 +35,7 @@ class ClassroomTask {
       'source': 'classroom',
       'sourceId': '$courseId:$id',
       'classroomLink': classroomLink,
+      'description': description ?? '',
     };
   }
 }
@@ -146,6 +149,7 @@ class ClassroomService {
         );
 
         final classroomLink = work['alternateLink']?.toString();
+        final description = work['description']?.toString();
 
         tasks.add(ClassroomTask(
           id: workId,
@@ -155,6 +159,7 @@ class ClassroomService {
           dueDate: finalDueDate,
           status: status,
           classroomLink: classroomLink,
+          description: description,
         ));
       }
     }

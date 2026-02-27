@@ -513,13 +513,11 @@ class _HomePageState extends State<HomePage> {
             ? Colors.green
             : Colors.orangeAccent;
     return InkWell(
-      onTap: isClosedDeadline
-          ? null
-          : () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) =>
-                      TaskDetailPage(task: task))),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) =>
+                  TaskDetailPage(task: task))),
       child: Container(
         decoration: BoxDecoration(
           color: isClosedDeadline ? Colors.grey[100] : Colors.white,

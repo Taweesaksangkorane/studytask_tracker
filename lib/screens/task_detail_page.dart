@@ -375,6 +375,52 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
               ),
               const SizedBox(height: 16),
 
+              // Late Submission Alert
+              if (_isExpired)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_rounded,
+                        color: Colors.red.shade600,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Late Submission',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'This assignment is past the due date. You can view the details but cannot submit new files.',
+                              style: TextStyle(
+                                color: Colors.red.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+
               // Description
               Container(
                 width: double.infinity,
@@ -656,14 +702,23 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _pickFile,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Another File'),
+                              onPressed: _isExpired ? null : () => _pickFile(),
+                              icon: Icon(
+                                _isExpired ? Icons.lock_rounded : Icons.add,
+                                color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                              ),
+                              label: Text(
+                                _isExpired ? 'Cannot Add Files (Late)' : 'Add Another File',
+                                style: TextStyle(
+                                  color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade500,
+                                backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                disabledBackgroundColor: Colors.grey.shade300,
                               ),
                             ),
                           ),
@@ -672,36 +727,40 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                     else
                       // Show upload box when not submitted and no attachments
                       GestureDetector(
-                        onTap: _pickFile,
+                        onTap: _isExpired ? null : () => _pickFile(),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: Colors.blue.shade300,
+                              color: _isExpired ? Colors.grey.shade300 : Colors.blue.shade300,
                               width: 2,
                               style: BorderStyle.solid,
                             ),
                             borderRadius: BorderRadius.circular(12),
-                            color: Colors.blue.shade50,
+                            color: _isExpired ? Colors.grey.shade100 : Colors.blue.shade50,
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.blue),
+                              Icon(
+                                _isExpired ? Icons.lock_rounded : Icons.cloud_upload_outlined,
+                                size: 40,
+                                color: _isExpired ? Colors.grey.shade500 : Colors.blue,
+                              ),
                               const SizedBox(height: 12),
-                              const Text(
-                                'Upload Proof Documents',
+                              Text(
+                                _isExpired ? 'Cannot Upload (Late)' : 'Upload Proof Documents',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E293B),
+                                  color: _isExpired ? Colors.grey.shade600 : const Color(0xFF1E293B),
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'PDF, Word, Image, Excel',
+                                _isExpired ? 'This assignment has passed the deadline' : 'PDF, Word, Image, Excel',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: _isExpired ? Colors.grey.shade500 : Colors.grey.shade600,
                                 ),
                               ),
                             ],
@@ -714,14 +773,23 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: _pickFile,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Choose File'),
+                            onPressed: _isExpired ? null : () => _pickFile(),
+                            icon: Icon(
+                              _isExpired ? Icons.lock_rounded : Icons.add,
+                              color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                            ),
+                            label: Text(
+                              _isExpired ? 'Cannot Choose File (Late)' : 'Choose File',
+                              style: TextStyle(
+                                color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade500,
+                              backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              disabledBackgroundColor: Colors.grey.shade300,
                             ),
                           ),
                         ),
@@ -750,14 +818,27 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             ),
                           )
                         : ElevatedButton.icon(
-                            onPressed: _attachments.isNotEmpty && !_isSubmitting ? () => _submitTask(context) : null,
-                            icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : const Icon(Icons.check),
-                            label: Text(_currentStatus == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
+                            onPressed: (_attachments.isNotEmpty && !_isSubmitting && !_isExpired) ? () => _submitTask(context) : null,
+                            icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : Icon(
+                              _isExpired ? Icons.lock_rounded : Icons.check,
+                              color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                            ),
+                            label: Text(
+                              _isExpired 
+                                ? 'Cannot Submit (Late)' 
+                                : (_currentStatus == TaskStatus.submitted ? 'Resubmit' : 'Submit'),
+                              style: TextStyle(
+                                color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _attachments.isNotEmpty ? Colors.green : Colors.grey,
+                              backgroundColor: _isExpired 
+                                ? Colors.grey.shade300
+                                : (_attachments.isNotEmpty ? Colors.green : Colors.grey),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              disabledBackgroundColor: Colors.grey.shade300,
                             ),
                           ),
                   ),
