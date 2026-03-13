@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
     _hideTopNotice();
 
     final mediaQuery = MediaQuery.of(context);
-    final bottomOffset = mediaQuery.padding.bottom + 96;
+    final bottomOffset = mediaQuery.padding.bottom + 10;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

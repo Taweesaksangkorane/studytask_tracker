@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(
             content: Text('Welcome ${user?.displayName ?? user?.email ?? 'User'}'),
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
           ),
         );
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
         SnackBar(
           content: Text('Welcome ${googleAccount.displayName ?? googleAccount.email}'),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 30),
         ),
       );
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
