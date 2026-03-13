@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,9 +21,15 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   var _attachments = <PlatformFile>[];
+  final _linkController = TextEditingController();
+  var _linkAttachments = <Map<String, dynamic>>[];
   var _submittedFiles = <Map<String, dynamic>>[];
   late TaskStatus _currentStatus;
   bool _isSubmitting = false;
+  double _uploadProgress = 0.0;
+  final Stopwatch _uploadStopwatch = Stopwatch();
+  Timer? _uploadTicker;
+  String _uploadElapsedLabel = '0s';
   String? _classroomLink;
 
   @override
@@ -78,6 +85,9 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
 
   @override
   void dispose() {
+    _uploadTicker?.cancel();
+    _uploadStopwatch.stop();
+    _linkController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -87,6 +97,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
+        withData: true,
       );
       
       if (result != null && result.files.isNotEmpty) {
@@ -121,23 +132,213 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     });
   }
 
-  Future<void> _openFilePath(String? path) async {
+  void _removeLinkAttachment(int index) {
+    setState(() {
+      _linkAttachments.removeAt(index);
+    });
+  }
+
+  bool get _hasDraftSubmission {
+    return _attachments.isNotEmpty || _linkAttachments.isNotEmpty;
+  }
+
+  bool get _canSubmitDraft {
+    return _hasDraftSubmission && !_isSubmitting && !_isExpired;
+  }
+
+  bool _isValidHttpUrl(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+  }
+
+  String _normalizeLinkInput(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    final hasScheme = trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    if (hasScheme) return trimmed;
+
+    if (trimmed.startsWith('drive.google.com') || trimmed.startsWith('docs.google.com')) {
+      return 'https://$trimmed';
+    }
+
+    return trimmed;
+  }
+
+  String _formatElapsed(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    if (minutes <= 0) return '${seconds}s';
+    return '${minutes}m ${seconds}s';
+  }
+
+  Duration _calculateUploadTimeout() {
+    final totalBytes = _attachments.fold<int>(0, (acc, file) => acc + file.size);
+    final totalMb = totalBytes / (1024 * 1024);
+
+    // Fast-path timeout: about 5s per 1MB, with practical lower/upper bounds.
+    final seconds = (totalMb * 5).ceil();
+    final clamped = seconds.clamp(5, 90);
+    return Duration(seconds: clamped);
+  }
+
+  String _extractDriveFileId(Uri uri) {
+    final queryId = uri.queryParameters['id'];
+    if (queryId != null && queryId.isNotEmpty) {
+      return queryId;
+    }
+
+    final segments = uri.pathSegments;
+    final fileIndex = segments.indexOf('d');
+    if (fileIndex != -1 && fileIndex + 1 < segments.length) {
+      return segments[fileIndex + 1];
+    }
+
+    return '';
+  }
+
+  String _deriveLinkDisplayName(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return 'External Link';
+
+    final host = uri.host.toLowerCase();
+    final isDriveHost = host.contains('drive.google.com') || host.contains('docs.google.com');
+    if (isDriveHost) {
+      final fileId = _extractDriveFileId(uri);
+      if (fileId.isNotEmpty) {
+        final shortId = fileId.length > 8 ? fileId.substring(0, 8) : fileId;
+        return 'Google Drive File ($shortId)';
+      }
+      return 'Google Drive File';
+    }
+
+    if (uri.pathSegments.isNotEmpty && uri.pathSegments.last.isNotEmpty) {
+      return Uri.decodeComponent(uri.pathSegments.last);
+    }
+    return uri.host;
+  }
+
+  void _startUploadTicker() {
+    _uploadTicker?.cancel();
+    _uploadStopwatch
+      ..reset()
+      ..start();
+    _uploadTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _uploadElapsedLabel = _formatElapsed(_uploadStopwatch.elapsed);
+      });
+    });
+  }
+
+  void _stopUploadTicker() {
+    _uploadTicker?.cancel();
+    _uploadTicker = null;
+    _uploadStopwatch.stop();
+  }
+
+  Future<void> _showAddLinkDialog() async {
+    _linkController.clear();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Attach Google Drive Link'),
+          content: TextField(
+            controller: _linkController,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              hintText: 'https://drive.google.com/...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = _normalizeLinkInput(_linkController.text);
+                if (!_isValidHttpUrl(value)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid link (http/https)')),
+                  );
+                  return;
+                }
+
+                final name = _deriveLinkDisplayName(value);
+
+                setState(() {
+                  _linkAttachments.add({
+                    'name': name,
+                    'size': 0,
+                    'extension': '',
+                    'downloadUrl': value,
+                    'type': 'link',
+                  });
+                });
+
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Link attached. Make sure link sharing allows access.'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Attach'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openFilePath(String? path, {String? url}) async {
+    if (url != null && url.isNotEmpty) {
+      try {
+        final uri = Uri.parse(url);
+        final canLaunch = await canLaunchUrl(uri);
+        if (!canLaunch) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Unable to open file URL')),
+            );
+          }
+          return;
+        }
+
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unable to open file URL: $e')),
+          );
+        }
+        return;
+      }
+    }
+
     if (kIsWeb) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Opening files is not available on web. Files will be submitted successfully.'),
+            content: Text('This file has no downloadable URL yet. Please re-submit to enable opening.'),
             duration: Duration(seconds: 3),
           ),
         );
       }
       return;
     }
-    
+
     if (path == null || path.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File path not available on this device')),
+          const SnackBar(content: Text('File path not available on this device. Please re-submit to enable URL opening.')),
         );
       }
       return;
@@ -161,6 +362,13 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
 
   bool get _isClassroomTask {
     return widget.task.isFromClassroom;
+  }
+
+  bool get _hasLegacySubmittedFiles {
+    return _submittedFiles.any((file) {
+      final url = (file['downloadUrl'] ?? '').toString().trim();
+      return url.isEmpty;
+    });
   }
 
   Future<void> _openClassroomAssignment() async {
@@ -592,10 +800,16 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             const SizedBox(height: 12),
                             ..._submittedFiles.map((fileData) {
                               final filePath = fileData['path'] as String?;
+                              final downloadUrl = fileData['downloadUrl'] as String?;
+                              final isLink = (fileData['type'] ?? '').toString() == 'link';
+                              final rawName = (fileData['name'] ?? 'Unknown').toString();
+                              final effectiveName = isLink && downloadUrl != null && downloadUrl.isNotEmpty
+                                  ? _deriveLinkDisplayName(downloadUrl)
+                                  : rawName;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: InkWell(
-                                  onTap: () => _openFilePath(filePath),
+                                  onTap: () => _openFilePath(filePath, url: downloadUrl),
                                   borderRadius: BorderRadius.circular(8),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -606,14 +820,14 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(_getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
+                                        Icon(isLink ? Icons.link_rounded : _getFileIcon(fileData['extension'] ?? ''), size: 24, color: Colors.blue),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                fileData['name'] ?? 'Unknown',
+                                                effectiveName,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
@@ -623,7 +837,9 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                                                 ),
                                               ),
                                               Text(
-                                                '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
+                                                isLink
+                                                    ? 'External link'
+                                                    : '${((fileData['size'] ?? 0) / 1024).toStringAsFixed(2)} KB',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   color: Colors.grey.shade600,
@@ -641,14 +857,56 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                               );
                             }).toList(),
                           ],
+                          if (_hasLegacySubmittedFiles) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange.shade300),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Some older submitted files have no URL, so they cannot be opened. Please attach files again and resubmit.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.orange.shade900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _isSubmitting ? null : _pickFile,
+                                icon: const Icon(Icons.upload_file),
+                                label: const Text('Attach Files to Resubmit'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       )
-                    else if (_attachments.isNotEmpty)
+                    else if (_hasDraftSubmission)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            '${_attachments.length} file(s) attached',
+                            '${_attachments.length + _linkAttachments.length} item(s) attached',
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -656,84 +914,169 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ..._attachments.asMap().entries.map((entry) {
-                            int index = entry.key;
-                            PlatformFile file = entry.value;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: InkWell(
-                                onTap: kIsWeb ? () => _openFilePath(null) : () => _openFilePath(file.path),
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(_getFileIcon(file.extension ?? ''), size: 24, color: Colors.blue),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              file.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF1E293B),
+                          if (_attachments.isNotEmpty)
+                            ..._attachments.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              PlatformFile file = entry.value;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: InkWell(
+                                  onTap: kIsWeb ? () => _openFilePath(null) : () => _openFilePath(file.path),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(_getFileIcon(file.extension ?? ''), size: 24, color: Colors.blue),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                file.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF1E293B),
+                                                ),
                                               ),
-                                            ),
-                                            Text(
-                                              '${(file.size / 1024).toStringAsFixed(2)} KB',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
+                                              Text(
+                                                '${(file.size / 1024).toStringAsFixed(2)} KB',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () => _removeAttachment(index),
-                                        icon: const Icon(Icons.close, size: 20, color: Colors.red),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ],
+                                        IconButton(
+                                          onPressed: () => _removeAttachment(index),
+                                          icon: const Icon(Icons.close, size: 20, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          if (_linkAttachments.isNotEmpty)
+                            ..._linkAttachments.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final linkData = entry.value;
+                              final linkName = (linkData['name'] ?? 'Drive Link').toString();
+                              final linkUrl = (linkData['downloadUrl'] ?? '').toString();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: InkWell(
+                                  onTap: () => _openFilePath(null, url: linkUrl),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.link_rounded, size: 24, color: Colors.blue),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                linkName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                              Text(
+                                                linkUrl,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () => _removeLinkAttachment(index),
+                                          icon: const Icon(Icons.close, size: 20, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isExpired ? null : () => _pickFile(),
+                                  icon: Icon(
+                                    _isExpired ? Icons.lock_rounded : Icons.add,
+                                    color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                                  ),
+                                  label: Text(
+                                    _isExpired ? 'Cannot Add Files (Late)' : 'Add File',
+                                    style: TextStyle(
+                                      color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    disabledBackgroundColor: Colors.grey.shade300,
                                   ),
                                 ),
                               ),
-                            );
-                          }).toList(),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _isExpired ? null : () => _pickFile(),
-                              icon: Icon(
-                                _isExpired ? Icons.lock_rounded : Icons.add,
-                                color: _isExpired ? Colors.grey.shade600 : Colors.white,
-                              ),
-                              label: Text(
-                                _isExpired ? 'Cannot Add Files (Late)' : 'Add Another File',
-                                style: TextStyle(
-                                  color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _isExpired ? null : _showAddLinkDialog,
+                                  icon: Icon(
+                                    _isExpired ? Icons.lock_rounded : Icons.link,
+                                    color: _isExpired ? Colors.grey.shade500 : Colors.blue.shade600,
+                                  ),
+                                  label: Text(
+                                    _isExpired ? 'Cannot Add Link' : 'Add Drive Link',
+                                    style: TextStyle(
+                                      color: _isExpired ? Colors.grey.shade500 : Colors.blue.shade700,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: _isExpired ? Colors.grey.shade300 : Colors.blue.shade300),
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
                                 ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                disabledBackgroundColor: Colors.grey.shade300,
-                              ),
-                            ),
+                            ],
                           ),
                         ],
                       )
@@ -761,7 +1104,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                _isExpired ? 'Cannot Upload (Late)' : 'Upload Proof Documents',
+                                _isExpired ? 'Cannot Upload (Late)' : 'Upload Files or Attach Drive Link',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -770,7 +1113,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _isExpired ? 'This assignment has passed the deadline' : 'PDF, Word, Image, Excel',
+                                _isExpired ? 'This assignment has passed the deadline' : 'PDF, Word, Image, Excel or Google Drive link',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: _isExpired ? Colors.grey.shade500 : Colors.grey.shade600,
@@ -780,31 +1123,55 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                           ),
                         ),
                       ),
-                    if (_attachments.isEmpty && _submittedFiles.isEmpty)
+                    if (!_hasDraftSubmission && _submittedFiles.isEmpty)
                       ...[
                         const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isExpired ? null : () => _pickFile(),
-                            icon: Icon(
-                              _isExpired ? Icons.lock_rounded : Icons.add,
-                              color: _isExpired ? Colors.grey.shade600 : Colors.white,
-                            ),
-                            label: Text(
-                              _isExpired ? 'Cannot Choose File (Late)' : 'Choose File',
-                              style: TextStyle(
-                                color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isExpired ? null : () => _pickFile(),
+                                icon: Icon(
+                                  _isExpired ? Icons.lock_rounded : Icons.add,
+                                  color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                                ),
+                                label: Text(
+                                  _isExpired ? 'Cannot Choose File (Late)' : 'Choose File',
+                                  style: TextStyle(
+                                    color: _isExpired ? Colors.grey.shade600 : Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  disabledBackgroundColor: Colors.grey.shade300,
+                                ),
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isExpired ? Colors.grey.shade300 : Colors.blue.shade500,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              disabledBackgroundColor: Colors.grey.shade300,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _isExpired ? null : _showAddLinkDialog,
+                                icon: Icon(
+                                  _isExpired ? Icons.lock_rounded : Icons.link,
+                                  color: _isExpired ? Colors.grey.shade500 : Colors.blue.shade600,
+                                ),
+                                label: Text(
+                                  _isExpired ? 'Cannot Add Link' : 'Add Drive Link',
+                                  style: TextStyle(
+                                    color: _isExpired ? Colors.grey.shade500 : Colors.blue.shade700,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: _isExpired ? Colors.grey.shade300 : Colors.blue.shade300),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                   ],
@@ -813,6 +1180,33 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 20),
+
+              if (_isSubmitting)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(
+                        value: _uploadProgress > 0 ? _uploadProgress : null,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(8),
+                        backgroundColor: Colors.grey.shade200,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _uploadProgress > 0
+                            ? 'Uploading... ${(_uploadProgress * 100).toStringAsFixed(0)}% (${_uploadElapsedLabel})'
+                            : 'Uploading files... (${_uploadElapsedLabel})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Action Buttons
               Row(
@@ -831,7 +1225,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             ),
                           )
                         : ElevatedButton.icon(
-                            onPressed: (_attachments.isNotEmpty && !_isSubmitting && !_isExpired) ? () => _submitTask(context) : null,
+                            onPressed: _canSubmitDraft ? () => _submitTask(context) : null,
                             icon: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : Icon(
                               _isExpired ? Icons.lock_rounded : Icons.check,
                               color: _isExpired ? Colors.grey.shade600 : Colors.white,
@@ -847,7 +1241,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _isExpired 
                                 ? Colors.grey.shade300
-                                : (_attachments.isNotEmpty ? Colors.green : Colors.grey),
+                                : (_canSubmitDraft ? Colors.green : Colors.grey),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1034,37 +1428,78 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
   }
 
   Future<void> _submitTask(BuildContext context) async {
-    if (_attachments.isEmpty) {
+    if (_attachments.isEmpty && _linkAttachments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please attach at least one file before submitting')),
+        const SnackBar(content: Text('Please attach at least one file or link before submitting')),
       );
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _uploadProgress = 0.0;
+      _uploadElapsedLabel = '0s';
+    });
+    _startUploadTicker();
 
     try {
-      // Convert file data to metadata (name, size, extension)
-      final fileMetadata = _attachments
-          .map((file) => {
-                'name': file.name,
-                'size': file.size,
-                'extension': file.extension ?? 'unknown',
-              })
-          .toList();
+      final submittedItems = <Map<String, dynamic>>[];
 
-      debugPrint('📤 Submitting ${fileMetadata.length} files...');
+      if (_attachments.isNotEmpty) {
+        try {
+          final timeoutDuration = _calculateUploadTimeout();
+          debugPrint('📤 Uploading ${_attachments.length} file(s)...');
+          final uploadedFiles = await TaskService().uploadTaskFiles(
+            widget.task.id,
+            _attachments,
+            onProgress: (progress) {
+              if (!mounted) return;
+              setState(() {
+                _uploadProgress = progress;
+              });
+            },
+          ).timeout(
+            timeoutDuration,
+            onTimeout: () {
+              throw TimeoutException('File upload timed out after ${timeoutDuration.inSeconds}s');
+            },
+          );
+          submittedItems.addAll(uploadedFiles);
+        } catch (uploadError) {
+          if (_linkAttachments.isEmpty) {
+            rethrow;
+          }
 
-      // Submit with file metadata
-      await TaskService().submitTask(widget.task.id, fileMetadata);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('File upload is taking too long. Continuing with attached links only.'),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+
+      submittedItems.addAll(_linkAttachments);
+
+      if (submittedItems.isEmpty) {
+        throw Exception('No valid file or link to submit');
+      }
+
+      debugPrint('📤 Saving submission metadata...');
+      await TaskService().submitTask(widget.task.id, submittedItems);
       if (!mounted) return;
       
       debugPrint('✅ Submitted successfully');
       
       setState(() {
         _currentStatus = TaskStatus.submitted;
-        _submittedFiles = fileMetadata;
+        _submittedFiles = submittedItems;
         _attachments.clear(); // Clear temporary attachments
+        _linkAttachments.clear();
+        _uploadProgress = 1.0;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1078,14 +1513,22 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       // Keep page open to show files, user presses back to go home
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text(message),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      _stopUploadTicker();
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _uploadProgress = 0.0;
+        });
+      }
     }
   }
 

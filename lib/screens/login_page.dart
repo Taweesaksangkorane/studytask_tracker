@@ -29,6 +29,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (kIsWeb) {
         final provider = GoogleAuthProvider()
+          ..addScope('https://www.googleapis.com/auth/drive.file')
           ..addScope('https://www.googleapis.com/auth/classroom.courses.readonly')
           ..addScope('https://www.googleapis.com/auth/classroom.course-work.readonly')
           ..addScope('https://www.googleapis.com/auth/classroom.coursework.me.readonly')
@@ -47,9 +48,12 @@ class _LoginPageState extends State<LoginPage> {
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome ${user?.displayName ?? user?.email ?? 'User'}')),
+          SnackBar(
+            content: Text('Welcome ${user?.displayName ?? user?.email ?? 'User'}'),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+          ),
         );
-        if (!mounted) return;
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
         return;
       }
@@ -71,12 +75,15 @@ class _LoginPageState extends State<LoginPage> {
 
       await _firebaseAuth.signInWithCredential(credential);
       
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Welcome ${googleAccount.displayName ?? googleAccount.email}')),
-      );
       // Navigate to home page after successful login
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome ${googleAccount.displayName ?? googleAccount.email}'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+        ),
+      );
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;

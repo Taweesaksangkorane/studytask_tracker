@@ -28,6 +28,40 @@ class _HomePageState extends State<HomePage> {
   String? _profileImageUrl;
   String? _userInitials;
 
+  void _hideTopNotice() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+  }
+
+  void _showTopNotice(
+    BuildContext context, {
+    required Widget content,
+    Duration duration = const Duration(seconds: 3),
+    Color? backgroundColor,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    _hideTopNotice();
+
+    final mediaQuery = MediaQuery.of(context);
+    final bottomOffset = mediaQuery.padding.bottom + 96;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: content,
+        duration: duration,
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomOffset),
+        action: (actionLabel != null && onAction != null)
+            ? SnackBarAction(
+                label: actionLabel,
+                onPressed: onAction,
+              )
+            : null,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -344,8 +378,9 @@ class _HomePageState extends State<HomePage> {
               final currentUser = FirebaseAuth.instance.currentUser;
               if (currentUser == null) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('กรุณาเข้าสู่ระบบก่อนซิงค์ Classroom')),
+                _showTopNotice(
+                  context,
+                  content: const Text('กรุณาเข้าสู่ระบบก่อนซิงค์ Classroom'),
                 );
                 return;
               }
@@ -358,26 +393,23 @@ class _HomePageState extends State<HomePage> {
               
               // Show loading indicator
               if (!mounted) return;
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Row(
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
+              _hideTopNotice();
+              _showTopNotice(
+                context,
+                duration: const Duration(seconds: 30),
+                content: const Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                      SizedBox(width: 12),
-                      Text("กำลังซิงค์ Classroom..."),
-                    ],
-                  ),
-                  duration: Duration(seconds: 30),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                    ),
+                    SizedBox(width: 12),
+                    Text("กำลังซิงค์ Classroom..."),
+                  ],
                 ),
               );
 
@@ -390,26 +422,25 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).clearSnackBars();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        Text(savedCount == 0
-                            ? "ไม่พบงานที่มีวันกำหนดส่ง"
-                            : "นำเข้างาน $savedCount รายการสำเร็จ"),
-                      ],
-                    ),
-                    backgroundColor: Colors.white,
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                _hideTopNotice();
+                _showTopNotice(
+                  context,
+                  backgroundColor: const Color(0xFF1F8D4A),
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text(savedCount == 0
+                          ? "ไม่พบงานที่มีวันกำหนดส่ง"
+                            : "นำเข้างาน $savedCount รายการสำเร็จ",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
                   ),
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).clearSnackBars();
+                _hideTopNotice();
                 
                 // Parse error message
                 String errorMsg = "ซิงค์ไม่สำเร็จ";
@@ -421,22 +452,22 @@ class _HomePageState extends State<HomePage> {
                   errorMsg = "เกิดข้อผิดพลาด: ${e.toString()}";
                 }
                 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(errorMsg)),
-                      ],
-                    ),
-                    backgroundColor: Colors.white,
-                    behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-                    action: SnackBarAction(
-                      label: "ลองอีกครั้ง",
-                      onPressed: () {},
-                    ),
+                _showTopNotice(
+                  context,
+                  backgroundColor: const Color(0xFFD14343),
+                  actionLabel: 'ลองอีกครั้ง',
+                  onAction: () {},
+                  content: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorMsg,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               } finally {
