@@ -1,6 +1,6 @@
 {
-    "name": "studytask_tracker",
-    "short_name": "studytask_tracker",
+    "name": "StudyTask",
+    "short_name": "StudyTask",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
