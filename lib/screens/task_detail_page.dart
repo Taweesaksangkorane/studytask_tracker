@@ -176,9 +176,10 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
     final totalBytes = _attachments.fold<int>(0, (acc, file) => acc + file.size);
     final totalMb = totalBytes / (1024 * 1024);
 
-    // Fast-path timeout: about 5s per 1MB, with practical lower/upper bounds.
-    final seconds = (totalMb * 5).ceil();
-    final clamped = seconds.clamp(5, 90);
+    // Add fixed overhead for auth/network latency and a generous per-MB budget.
+    // This prevents small files on slow mobile networks from timing out too early.
+    final seconds = 120 + (totalMb * 30).ceil();
+    final clamped = seconds.clamp(120, 900);
     return Duration(seconds: clamped);
   }
 
