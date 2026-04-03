@@ -43,7 +43,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   int _getFirstWeekday(DateTime date) {
-    return DateTime(date.year, date.month, 1).weekday;
+    return DateTime(date.year, date.month, 1).weekday % 7;
   }
 
   void _previousMonth() {
@@ -64,7 +64,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final firstWeekday = _getFirstWeekday(_currentMonth);
     
     List<DateTime> days = [];
-    for (int i = 0; i < firstWeekday - 1; i++) {
+    for (int i = 0; i < firstWeekday; i++) {
       days.add(DateTime(0));
     }
     for (int i = 1; i <= daysInMonth; i++) {
@@ -163,7 +163,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('พ', textAlign: TextAlign.center, 
+                        const Text('พฤ', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
