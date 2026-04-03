@@ -15,16 +15,31 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  FirebaseAuth? _firebaseAuth;
 
   bool isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    try {
+      _firebaseAuth = FirebaseAuth.instance;
+    } catch (_) {
+      _firebaseAuth = null;
+    }
+  }
+
   Future<void> signInWithGoogle() async {
     try {
+      final firebaseAuth = _firebaseAuth;
+      if (firebaseAuth == null) {
+        return;
+      }
+
       setState(() => isLoading = true);
       
       // Sign out completely from both Firebase and Google
-      await _firebaseAuth.signOut();
+      await firebaseAuth.signOut();
       await _googleAuthService.signOut();
 
       if (kIsWeb) {
@@ -36,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           ..addScope('https://www.googleapis.com/auth/classroom.student-submissions.me.readonly')
           ..setCustomParameters({'prompt': 'select_account'});
 
-        final userCredential = await _firebaseAuth.signInWithPopup(provider);
+        final userCredential = await firebaseAuth.signInWithPopup(provider);
         final credential = userCredential.credential;
         if (credential is OAuthCredential && credential.accessToken != null) {
           _googleAuthService.setWebAccessToken(
@@ -73,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
 
-      await _firebaseAuth.signInWithCredential(credential);
+      await firebaseAuth.signInWithCredential(credential);
       
       // Navigate to home page after successful login
       if (!mounted) return;
@@ -213,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                                     width: double.infinity,
                                     height: 56,
                                     child: ElevatedButton.icon(
-                                      onPressed: isLoading ? null : signInWithGoogle,
+                                      onPressed: (isLoading || _firebaseAuth == null) ? null : signInWithGoogle,
                                       icon: isLoading
                                           ? const SizedBox(
                                               width: 20,
