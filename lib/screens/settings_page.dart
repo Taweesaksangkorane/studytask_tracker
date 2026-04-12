@@ -15,13 +15,11 @@ class _SettingsPageState extends State<SettingsPage> {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final NotificationService _notificationService = NotificationService();
   late Duration _selectedReminderOffset;
-  int _pendingNotificationCount = 0;
 
   @override
   void initState() {
     super.initState();
     _selectedReminderOffset = _notificationService.reminderOffset;
-    _refreshPendingCount();
   }
 
   @override
@@ -296,7 +294,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.blue : Colors.grey.shade100,
+                    color: isSelected
+                        ? Colors.blue.withValues(alpha: 0.12)
+                        : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isSelected
@@ -310,7 +310,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.blue : Colors.grey.shade700,
+                      color: isSelected
+                          ? Colors.blue.shade700
+                          : Colors.grey.shade700,
                     ),
                   ),
                 ),
@@ -341,11 +343,6 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           Text(
             'ตอนนี้: ${_getDurationLabel(_selectedReminderOffset)}',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Pending notifications: $_pendingNotificationCount (จำนวนแจ้งเตือนที่ตั้งรอไว้)',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
@@ -458,7 +455,6 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _selectedReminderOffset = offset);
     await _notificationService.setReminderOffset(offset);
     await _reschedulePendingTasks();
-    await _refreshPendingCount();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -493,7 +489,6 @@ class _SettingsPageState extends State<SettingsPage> {
       body: 'แจ้งเตือนใช้งานได้แล้ว',
       payload: 'test',
     );
-    await _refreshPendingCount();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -501,12 +496,6 @@ class _SettingsPageState extends State<SettingsPage> {
         duration: Duration(seconds: 2),
       ),
     );
-  }
-
-  Future<void> _refreshPendingCount() async {
-    final count = await _notificationService.getPendingNotificationsCount();
-    if (!mounted) return;
-    setState(() => _pendingNotificationCount = count);
   }
 
   void _showAboutDialog() {

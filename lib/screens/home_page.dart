@@ -203,8 +203,28 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: _buildBottomNav(context),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const NewTaskPage())),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NewTaskPage()),
+          );
+
+          if (!mounted || result != 'task_created') return;
+          _showTopNotice(
+            context,
+            backgroundColor: const Color(0xFF1F8D4A),
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'สร้างงานสำเร็จ และตั้งแจ้งเตือนให้แล้ว',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        },
         backgroundColor: Colors.blueAccent,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 35, color: Colors.white),

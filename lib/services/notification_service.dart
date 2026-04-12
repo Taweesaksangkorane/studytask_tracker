@@ -180,8 +180,8 @@ class NotificationService {
       try {
         await flutterLocalNotificationsPlugin.zonedSchedule(
           _toValidNotificationId(task.id.hashCode),
-          '⏰ งาน "${task.title}" ใกล้ถึงกำหนดส่ง!',
-          'ต้องส่ง ${task.title} ใน ${_getDaysUntilDue(task.dueDate)}',
+          '🔔 เตือนส่งงาน: ${task.title}',
+          'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
           details,
           androidScheduleMode: _scheduleMode,
@@ -193,8 +193,8 @@ class NotificationService {
         // Fallback for devices that reject exact alarms.
         await flutterLocalNotificationsPlugin.zonedSchedule(
           _toValidNotificationId(task.id.hashCode),
-          '⏰ งาน "${task.title}" ใกล้ถึงกำหนดส่ง!',
-          'ต้องส่ง ${task.title} ใน ${_getDaysUntilDue(task.dueDate)}',
+          '🔔 เตือนส่งงาน: ${task.title}',
+          'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

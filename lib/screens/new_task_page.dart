@@ -97,13 +97,7 @@ class _NewTaskPageState extends State<NewTaskPage> with SingleTickerProviderStat
     try {
       await _taskService.addTask(task);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ Task created successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+      Navigator.pop(context, 'task_created');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
