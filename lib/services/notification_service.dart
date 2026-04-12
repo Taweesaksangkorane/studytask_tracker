@@ -292,9 +292,12 @@ class NotificationService {
         return;
       }
 
-      final nextTask = upcoming.first;
-      final fingerprint =
-          '${nextTask.id}|${nextTask.dueDate.toIso8601String()}|${_reminderOffset.inMinutes}';
+      final fingerprint = [
+        _reminderOffset.inMinutes,
+        ...upcoming
+            .map((task) => '${task.id}|${task.dueDate.toIso8601String()}')
+            .toList(),
+      ].join('||');
 
       // Skip re-scheduling if nothing actually changed.
       if (_lastScheduleFingerprint == fingerprint) {
@@ -302,7 +305,9 @@ class NotificationService {
       }
 
       await cancelAllNotifications();
-      await scheduleTaskReminder(nextTask);
+      for (final task in upcoming) {
+        await scheduleTaskReminder(task);
+      }
       _lastScheduleFingerprint = fingerprint;
     });
 
