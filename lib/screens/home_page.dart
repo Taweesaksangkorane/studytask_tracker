@@ -4,6 +4,7 @@ import '../models/task_model.dart';
 import '../services/task_service.dart';
 import '../services/classroom_service.dart';
 import '../services/google_auth_service.dart';
+import '../services/notification_service.dart';
 import 'task_detail_page.dart';
 import 'settings_page.dart';
 import 'new_task_page.dart';
@@ -23,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   DateTime? _lastSyncAt;
   bool _isSyncing = false;
   final TaskService _taskService = TaskService();
+  final NotificationService _notificationService = NotificationService();
   List<TaskModel> _allTasks = [];
   bool _isLoading = true;
   String? _profileImageUrl;
@@ -66,12 +68,17 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadProfileData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificationService.ensureNotificationPermission();
+    });
     _taskService.getTasks().listen((tasks) {
       if (mounted) {
         setState(() {
           _allTasks = tasks;
           _isLoading = false;
         });
+        // Schedule reminders for all pending tasks
+        _notificationService.scheduleAllReminders(tasks);
       }
     });
   }
@@ -419,6 +426,11 @@ class _HomePageState extends State<HomePage> {
 
                 if (mounted) {
                   setState(() => _lastSyncAt = DateTime.now());
+                }
+
+                // Show notification for successful sync
+                if (savedCount > 0) {
+                  await _notificationService.showSyncNotification(savedCount);
                 }
 
                 if (!mounted) return;

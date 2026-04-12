@@ -9,17 +9,37 @@ import 'package:http/http.dart' as http;
 import '../models/task_model.dart';
 import 'google_auth_service.dart';
 import 'classroom_service.dart';
+import 'notification_service.dart';
 
 class TaskService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final NotificationService _notificationService = NotificationService();
 
   Future<void> addTask(TaskModel task) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    await _firestore
+    final docRef = await _firestore
         .collection('users')
         .doc(uid)
         .collection('tasks')
         .add(task.toMap());
+
+    // Schedule reminder immediately for newly created task
+    try {
+      final createdTask = TaskModel(
+        id: docRef.id,
+        title: task.title,
+        subject: task.subject,
+        dueDate: task.dueDate,
+        status: task.status,
+        source: task.source,
+        description: task.description,
+        submittedFiles: task.submittedFiles,
+        classroomLink: task.classroomLink,
+      );
+      await _notificationService.scheduleTaskReminder(createdTask);
+    } catch (_) {
+      // Do not fail task creation if notification scheduling fails.
+    }
   }
 
   Future<int> upsertClassroomTasks(List<ClassroomTask> tasks) async {
@@ -85,6 +105,27 @@ class TaskService {
         .collection('tasks')
         .doc(taskId)
         .update({'status': status.name});
+
+    if (status == TaskStatus.submitted) {
+      try {
+        await _notificationService.cancelTaskReminder(taskId);
+      } catch (_) {}
+      return;
+    }
+
+    // Re-schedule when moved back to pending.
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('tasks')
+          .doc(taskId)
+          .get();
+      if (doc.exists) {
+        final task = TaskModel.fromFirestore(doc.id, doc.data()!);
+        await _notificationService.scheduleTaskReminder(task);
+      }
+    } catch (_) {}
   }
 
   Future<void> submitTask(String taskId, List<Map<String, dynamic>> fileMetadata) async {
@@ -98,6 +139,10 @@ class TaskService {
           'status': 'submitted',
           'submittedFiles': fileMetadata,
         });
+
+    try {
+      await _notificationService.cancelTaskReminder(taskId);
+    } catch (_) {}
   }
 
   Future<List<Map<String, dynamic>>> uploadTaskFiles(
@@ -402,6 +447,10 @@ class TaskService {
         .collection('tasks')
         .doc(taskId)
         .delete();
+
+    try {
+      await _notificationService.cancelTaskReminder(taskId);
+    } catch (_) {}
   }
 
   Stream<List<TaskModel>> getTasks() {

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum TaskStatus { pending, submitted }
 
 class TaskModel {
@@ -28,9 +30,7 @@ class TaskModel {
       id: id,
       title: data['title'] ?? '',
       subject: data['subject'] ?? '',
-      dueDate: data['dueDate'] != null
-    ? DateTime.parse(data['dueDate'])
-    : DateTime.now(),
+      dueDate: _parseDueDateValue(data['dueDate']),
       status: data['status'] == 'submitted'
           ? TaskStatus.submitted
           : TaskStatus.pending,
@@ -41,6 +41,32 @@ class TaskModel {
       ),
       classroomLink: data['classroomLink'],
     );
+  }
+
+  static DateTime _parseDueDateValue(dynamic rawDueDate) {
+    if (rawDueDate is Timestamp) {
+      return rawDueDate.toDate().toLocal();
+    }
+
+    if (rawDueDate is DateTime) {
+      return rawDueDate.isUtc ? rawDueDate.toLocal() : rawDueDate;
+    }
+
+    if (rawDueDate is String && rawDueDate.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(rawDueDate);
+        return parsed.isUtc ? parsed.toLocal() : parsed;
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
+    if (rawDueDate is int) {
+      return DateTime.fromMillisecondsSinceEpoch(rawDueDate, isUtc: true)
+          .toLocal();
+    }
+
+    return DateTime.now();
   }
 
   Map<String, dynamic> toMap() {

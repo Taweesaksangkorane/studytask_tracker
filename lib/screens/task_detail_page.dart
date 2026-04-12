@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/task_model.dart';
 import '../services/task_service.dart';
+import '../services/notification_service.dart';
 
 class TaskDetailPage extends StatefulWidget {
   final TaskModel task;
@@ -1494,6 +1495,11 @@ class _TaskDetailPageState extends State<TaskDetailPage> with SingleTickerProvid
       if (!mounted) return;
       
       debugPrint('✅ Submitted successfully');
+      
+      // Show notification for successful submission
+      await NotificationService().showTaskSubmittedNotification(widget.task.title);
+      // Cancel the reminder notification since task is submitted
+      await NotificationService().cancelTaskReminder(widget.task.id);
       
       setState(() {
         _currentStatus = TaskStatus.submitted;

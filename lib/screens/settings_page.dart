@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/google_auth_service.dart';
+import '../services/notification_service.dart';
+import '../services/task_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -11,6 +13,16 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
+  final NotificationService _notificationService = NotificationService();
+  late Duration _selectedReminderOffset;
+  int _pendingNotificationCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedReminderOffset = _notificationService.reminderOffset;
+    _refreshPendingCount();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +65,9 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildAccountCard(user),
             const SizedBox(height: 24),
 
+            // Notifications Section
+            _buildSectionTitle('Notifications'),
+            _buildNotificationSettings(),
             const SizedBox(height: 24),
 
             // About Section
@@ -199,6 +214,299 @@ class _SettingsPageState extends State<SettingsPage> {
         onTap: onTap,
       ),
     );
+  }
+
+  Widget _buildNotificationSettings() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Colors.orange,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Task Reminders',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E293B),
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'Get notified before task deadline',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: _sendTestNotification,
+                icon: const Icon(Icons.play_circle_outline, color: Colors.blue),
+                tooltip: 'ทดสอบแจ้งเตือน',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Remind me',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ...[const Duration(hours: 1), const Duration(hours: 6), const Duration(hours: 12), const Duration(hours: 24), const Duration(hours: 48)]
+                  .map((offset) {
+              final isSelected = _selectedReminderOffset == offset;
+              return GestureDetector(
+                onTap: () async {
+                  await _applyReminderOffset(offset);
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.blue : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.blue
+                          : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    _getDurationLabel(offset),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.blue : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+              GestureDetector(
+                onTap: _showCustomReminderDialog,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade300),
+                  ),
+                  child: const Text(
+                    'กำหนดเอง',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'ตอนนี้: ${_getDurationLabel(_selectedReminderOffset)}',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pending notifications: $_pendingNotificationCount (จำนวนแจ้งเตือนที่ตั้งรอไว้)',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getDurationLabel(Duration offset) {
+    if (offset.inDays >= 1 && offset.inHours % 24 == 0) {
+      final days = offset.inDays;
+      return days == 1 ? '1 วัน' : '$days วัน';
+    }
+    if (offset.inHours >= 1 && offset.inMinutes % 60 == 0) {
+      final hours = offset.inHours;
+      return hours == 1 ? '1 ชั่วโมง' : '$hours ชั่วโมง';
+    }
+    final minutes = offset.inMinutes;
+    return minutes == 1 ? '1 นาที' : '$minutes นาที';
+  }
+
+  Future<void> _showCustomReminderDialog() async {
+    final valueController = TextEditingController(text: '30');
+    var unit = 'minutes';
+
+    final result = await showDialog<Duration>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('กำหนดเวลาแจ้งเตือนเอง'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: valueController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'จำนวนเวลา',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: unit,
+                    decoration: const InputDecoration(
+                      labelText: 'หน่วย',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'minutes', child: Text('นาที')),
+                      DropdownMenuItem(value: 'hours', child: Text('ชั่วโมง')),
+                      DropdownMenuItem(value: 'days', child: Text('วัน')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() => unit = value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('ยกเลิก'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final amount = int.tryParse(valueController.text.trim());
+                    if (amount == null || amount <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('กรอกตัวเลขมากกว่า 0')),
+                      );
+                      return;
+                    }
+
+                    final duration = switch (unit) {
+                      'days' => Duration(days: amount),
+                      'hours' => Duration(hours: amount),
+                      _ => Duration(minutes: amount),
+                    };
+                    Navigator.pop(dialogContext, duration);
+                  },
+                  child: const Text('บันทึก'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null) return;
+    await _applyReminderOffset(result);
+  }
+
+  Future<void> _applyReminderOffset(Duration offset) async {
+    final granted = await _notificationService.ensureNotificationPermission();
+    if (!granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('แอปยังไม่ได้รับสิทธิ์แจ้งเตือน กรุณาเปิด Notifications ก่อน'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _selectedReminderOffset = offset);
+    await _notificationService.setReminderOffset(offset);
+    await _reschedulePendingTasks();
+    await _refreshPendingCount();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('ตั้งเตือนล่วงหน้า ${_getDurationLabel(offset)} แล้ว'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _reschedulePendingTasks() async {
+    final tasks = await TaskService().getTasks().first;
+    await _notificationService.scheduleAllReminders(tasks);
+  }
+
+  Future<void> _sendTestNotification() async {
+    final granted = await _notificationService.ensureNotificationPermission();
+    if (!granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ส่งทดสอบไม่ได้ เพราะยังไม่อนุญาต Notifications'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await _notificationService.showImmediateNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: '🔔 ทดสอบแจ้งเตือน',
+      body: 'แจ้งเตือนใช้งานได้แล้ว',
+      payload: 'test',
+    );
+    await _refreshPendingCount();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ส่งแจ้งเตือนทดสอบแล้ว'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _refreshPendingCount() async {
+    final count = await _notificationService.getPendingNotificationsCount();
+    if (!mounted) return;
+    setState(() => _pendingNotificationCount = count);
   }
 
   void _showAboutDialog() {

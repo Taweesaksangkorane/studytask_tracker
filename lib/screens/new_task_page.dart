@@ -48,6 +48,12 @@ class _NewTaskPageState extends State<NewTaskPage> with SingleTickerProviderStat
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_dueDate),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
     if (picked != null) {
       setState(() {

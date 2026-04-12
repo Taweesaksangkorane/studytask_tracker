@@ -21,6 +21,9 @@ dependencies:
   webview_flutter: ^4.4.2
   file_picker: ^8.0.0
   open_filex: ^4.5.0
+  flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.3
+  flutter_timezone: ^4.1.1
 
 dev_dependencies:
   flutter_test:
