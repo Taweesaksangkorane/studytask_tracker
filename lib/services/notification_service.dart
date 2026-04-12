@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 import '../models/task_model.dart';
+import 'web_notification_bridge.dart' as web_notification;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -12,6 +16,7 @@ class NotificationService {
   AndroidScheduleMode _scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
   Future<void> _scheduleQueue = Future.value();
   String? _lastScheduleFingerprint;
+  final Map<int, Timer> _webTimers = <int, Timer>{};
 
   factory NotificationService() {
     return _instance;
@@ -41,9 +46,14 @@ class NotificationService {
   }
 
   Future<void> _initialize() async {
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     tzdata.initializeTimeZones();
     await _configureLocalTimeZone();
+
+    if (kIsWeb) {
+      return;
+    }
+
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     await _setupNotifications();
   }
 
@@ -114,6 +124,10 @@ class NotificationService {
   }
 
   Future<bool> ensureNotificationPermission() async {
+    if (kIsWeb) {
+      return web_notification.requestPermission();
+    }
+
     final androidPlugin = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -142,6 +156,8 @@ class NotificationService {
     if (!granted) return;
     if (task.isNoDeadline) return; // Skip tasks with no deadline
 
+    final notificationId = _toValidNotificationId(task.id.hashCode);
+
     try {
       // Schedule notification based on user preference
       final now = DateTime.now();
@@ -158,6 +174,19 @@ class NotificationService {
         // If user sets a long reminder (e.g. 2 days) but task is due sooner,
         // schedule a near-immediate reminder once instead of firing repeatedly.
         reminderTime = now.add(const Duration(seconds: 10));
+      }
+
+      if (kIsWeb) {
+        _webTimers[notificationId]?.cancel();
+        final delay = reminderTime.difference(now);
+        _webTimers[notificationId] = Timer(delay, () {
+          web_notification.showNotification(
+            title: '🔔 เตือนส่งงาน: ${task.title}',
+            body: 'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
+          );
+          _webTimers.remove(notificationId);
+        });
+        return;
       }
 
       final scheduledAt = tz.TZDateTime.from(reminderTime, tz.local);
@@ -179,7 +208,7 @@ class NotificationService {
 
       try {
         await flutterLocalNotificationsPlugin.zonedSchedule(
-          _toValidNotificationId(task.id.hashCode),
+          notificationId,
           '🔔 เตือนส่งงาน: ${task.title}',
           'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
@@ -192,7 +221,7 @@ class NotificationService {
       } catch (_) {
         // Fallback for devices that reject exact alarms.
         await flutterLocalNotificationsPlugin.zonedSchedule(
-          _toValidNotificationId(task.id.hashCode),
+          notificationId,
           '🔔 เตือนส่งงาน: ${task.title}',
           'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
@@ -219,6 +248,12 @@ class NotificationService {
     await _ready;
     final granted = await ensureNotificationPermission();
     if (!granted) return;
+
+    if (kIsWeb) {
+      web_notification.showNotification(title: title, body: body);
+      return;
+    }
+
     try {
       final safeId = _toValidNotificationId(id);
       await flutterLocalNotificationsPlugin.show(
@@ -250,9 +285,17 @@ class NotificationService {
   /// Cancel notification for a task
   Future<void> cancelTaskReminder(String taskId) async {
     await _ready;
+    final notificationId = _toValidNotificationId(taskId.hashCode);
+
+    if (kIsWeb) {
+      _webTimers[notificationId]?.cancel();
+      _webTimers.remove(notificationId);
+      return;
+    }
+
     try {
       await flutterLocalNotificationsPlugin.cancel(
-        _toValidNotificationId(taskId.hashCode),
+        notificationId,
       );
       print('🗑️ Cancelled reminder for $taskId');
     } catch (e) {
@@ -263,6 +306,15 @@ class NotificationService {
   /// Cancel all notifications
   Future<void> cancelAllNotifications() async {
     await _ready;
+
+    if (kIsWeb) {
+      for (final timer in _webTimers.values) {
+        timer.cancel();
+      }
+      _webTimers.clear();
+      return;
+    }
+
     try {
       await flutterLocalNotificationsPlugin.cancelAll();
       print('🗑️ Cancelled all notifications');
@@ -354,6 +406,11 @@ class NotificationService {
   /// Get pending notifications count
   Future<int> getPendingNotificationsCount() async {
     await _ready;
+
+    if (kIsWeb) {
+      return _webTimers.length;
+    }
+
     final pending =
         await flutterLocalNotificationsPlugin.pendingNotificationRequests();
     return pending.length;
