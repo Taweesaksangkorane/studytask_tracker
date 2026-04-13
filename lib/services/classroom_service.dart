@@ -49,7 +49,7 @@ class ClassroomService {
     if (kIsWeb) {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
-        throw Exception('กรุณาเข้าสู่ระบบด้วยบัญชีของคุณก่อนซิงค์ Classroom');
+        throw Exception('Please sign in with your account before syncing Classroom');
       }
 
       final currentUid = FirebaseAuth.instance.currentUser?.uid;
@@ -75,13 +75,13 @@ class ClassroomService {
         return credential.accessToken!;
       }
 
-      throw Exception('ไม่สามารถรับสิทธิ์ Google Classroom ได้ กรุณาลองใหม่อีกครั้ง');
+      throw Exception('Unable to get Google Classroom permission. Please try again.');
     }
 
     final auth = await _getAuth();
     final accessToken = auth.accessToken;
     if (accessToken == null || accessToken.isEmpty) {
-      throw Exception('ไม่พบ access token จาก Google account');
+      throw Exception('Access token not found from Google account');
     }
     return accessToken;
   }
@@ -93,7 +93,7 @@ class ClassroomService {
 
     // If no account, throw exception - user needs to login first
     if (account == null) {
-      throw Exception('กรุณาเข้าสู่ระบบด้วย Google ก่อนซิงค์ Classroom');
+      throw Exception('Please sign in with Google before syncing Classroom');
     }
 
     // Request classroom scopes (this will prompt only if not already granted)
@@ -107,7 +107,7 @@ class ClassroomService {
       final googleSignIn = _googleAuthService.instance;
       final success = await googleSignIn.requestScopes(requiredScopes);
       if (!success) {
-        throw Exception('กรุณาอนุญาตการเข้าถึง Google Classroom');
+        throw Exception('Please allow Google Classroom access');
       }
     } catch (e) {
       // If requestScopes fails, it might be already granted or network issue

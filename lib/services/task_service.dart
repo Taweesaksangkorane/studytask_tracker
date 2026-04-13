@@ -456,7 +456,7 @@ class TaskService {
   Stream<List<TaskModel>> getTasks() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     
-    // ถ้า user logout ให้ return empty stream
+    // If user is logged out, return an empty stream.
     if (uid == null) {
       return Stream.value([]);
     }

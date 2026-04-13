@@ -24,17 +24,17 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _showSnack("กรอกข้อมูลให้ครบทุกช่อง");
+      _showSnack("Please fill in all fields");
       return;
     }
 
     if (!email.contains("@")) {
-      _showSnack("รูปแบบ Email ไม่ถูกต้อง");
+      _showSnack("Invalid email format");
       return;
     }
 
     if (password.length < 6) {
-      _showSnack("รหัสผ่านต้อง ≥ 6 ตัว");
+      _showSnack("Password must be at least 6 characters");
       return;
     }
 
@@ -49,7 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
       await _firebaseAuth.currentUser?.updateDisplayName(name);
 
       if (!mounted) return;
-      _showSnack("สร้างบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ");
+      _showSnack("Account created successfully! Please sign in");
       
       await Future.delayed(const Duration(milliseconds: 1500));
       if (!mounted) return;
@@ -59,25 +59,25 @@ class _RegisterPageState extends State<RegisterPage> {
       String errorMessage = "Registration failed";
 
       if (e.code == 'email-already-in-use') {
-        errorMessage = "Email นี้ถูกใช้แล้ว";
+        errorMessage = "This email is already in use";
       } else if (e.code == 'invalid-email') {
-        errorMessage = "รูปแบบ Email ไม่ถูกต้อง";
+        errorMessage = "Invalid email format";
       } else if (e.code == 'weak-password') {
-        errorMessage = "รหัสผ่านอ่อนเกินไป (ต้องมีตัวพิมพ์ใหญ่ ตัวเลข สัญลักษณ์)";
+        errorMessage = "Password is too weak (use uppercase, numbers, symbols)";
       } else if (e.code == 'operation-not-allowed') {
-        errorMessage = "Email/Password authentication ยังไม่เปิดใช้งาน";
+        errorMessage = "Email/Password authentication is not enabled";
       } else if (e.code == 'invalid-credential') {
-        errorMessage = "ข้อมูลไม่ถูกต้อง";
+        errorMessage = "Invalid credentials";
       } else if (e.code == 'too-many-requests') {
-        errorMessage = "พยายามซ้ำเกินไป กรุณารอสักครู่";
+        errorMessage = "Too many attempts. Please wait a moment";
       } else {
-        errorMessage = "เกิดข้อผิดพลาด: ${e.code} - ${e.message}";
+        errorMessage = "Error: ${e.code} - ${e.message}";
       }
 
       _showSnack(errorMessage);
       print('Firebase Error: ${e.code} - ${e.message}');
     } catch (e) {
-      _showSnack("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      _showSnack("Something went wrong. Please try again");
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

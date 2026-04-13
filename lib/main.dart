@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         primaryColor: Colors.blueAccent,
       ),
-      home: const AuthWrapper(), // 👈 เปลี่ยนตรงนี้
+      home: const AuthWrapper(), // 👈 switch here
     );
   }
 }

@@ -181,8 +181,8 @@ class NotificationService {
         final delay = reminderTime.difference(now);
         _webTimers[notificationId] = Timer(delay, () {
           web_notification.showNotification(
-            title: '🔔 เตือนส่งงาน: ${task.title}',
-            body: 'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
+            title: '🔔 Task reminder: ${task.title}',
+            body: 'Due in ${_getDaysUntilDue(task.dueDate)}',
           );
           _webTimers.remove(notificationId);
         });
@@ -209,8 +209,8 @@ class NotificationService {
       try {
         await flutterLocalNotificationsPlugin.zonedSchedule(
           notificationId,
-          '🔔 เตือนส่งงาน: ${task.title}',
-          'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
+          '🔔 Task reminder: ${task.title}',
+          'Due in ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
           details,
           androidScheduleMode: _scheduleMode,
@@ -222,8 +222,8 @@ class NotificationService {
         // Fallback for devices that reject exact alarms.
         await flutterLocalNotificationsPlugin.zonedSchedule(
           notificationId,
-          '🔔 เตือนส่งงาน: ${task.title}',
-          'ใกล้ครบกำหนดใน ${_getDaysUntilDue(task.dueDate)}',
+          '🔔 Task reminder: ${task.title}',
+          'Due in ${_getDaysUntilDue(task.dueDate)}',
           scheduledAt,
           details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -373,13 +373,13 @@ class NotificationService {
     final days = difference.inDays;
 
     if (days == 0) {
-      return 'วันนี้';
+      return 'today';
     } else if (days == 1) {
-      return 'พรุ่งนี้';
+      return 'tomorrow';
     } else if (days < 0) {
-      return '${days.abs()} วันแล้ว (ค้างแล้ว!)';
+      return '${days.abs()} day(s) overdue';
     } else {
-      return '$days วัน';
+      return '$days day(s)';
     }
   }
 
@@ -387,8 +387,8 @@ class NotificationService {
   Future<void> showTaskSubmittedNotification(String taskTitle) async {
     await showImmediateNotification(
       id: DateTime.now().millisecondsSinceEpoch.hashCode,
-      title: '✅ ส่งงานสำเร็จ!',
-      body: 'คุณส่ง "$taskTitle" เรียบร้อยแล้ว',
+      title: '✅ Task submitted!',
+      body: 'You submitted "$taskTitle" successfully',
       payload: 'submitted',
     );
   }
@@ -397,8 +397,8 @@ class NotificationService {
   Future<void> showSyncNotification(int count) async {
     await showImmediateNotification(
       id: DateTime.now().millisecondsSinceEpoch.hashCode,
-      title: '🔄 ซิงค์ Classroom เสร็จ',
-      body: 'อัปเดตงาน $count รายการจาก Google Classroom',
+      title: '🔄 Classroom sync complete',
+      body: 'Updated $count task(s) from Google Classroom',
       payload: 'sync',
     );
   }

@@ -265,7 +265,7 @@ class _SettingsPageState extends State<SettingsPage> {
               IconButton(
                 onPressed: _sendTestNotification,
                 icon: const Icon(Icons.play_circle_outline, color: Colors.blue),
-                tooltip: 'ทดสอบแจ้งเตือน',
+                tooltip: 'Test notification',
               ),
             ],
           ),
@@ -329,7 +329,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     border: Border.all(color: Colors.blue.shade300),
                   ),
                   child: const Text(
-                    'กำหนดเอง',
+                    'Custom',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -342,7 +342,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ตอนนี้: ${_getDurationLabel(_selectedReminderOffset)}',
+            'Current: ${_getDurationLabel(_selectedReminderOffset)}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
@@ -353,14 +353,14 @@ class _SettingsPageState extends State<SettingsPage> {
   String _getDurationLabel(Duration offset) {
     if (offset.inDays >= 1 && offset.inHours % 24 == 0) {
       final days = offset.inDays;
-      return days == 1 ? '1 วัน' : '$days วัน';
+      return days == 1 ? '1 day' : '$days days';
     }
     if (offset.inHours >= 1 && offset.inMinutes % 60 == 0) {
       final hours = offset.inHours;
-      return hours == 1 ? '1 ชั่วโมง' : '$hours ชั่วโมง';
+      return hours == 1 ? '1 hour' : '$hours hours';
     }
     final minutes = offset.inMinutes;
-    return minutes == 1 ? '1 นาที' : '$minutes นาที';
+    return minutes == 1 ? '1 minute' : '$minutes minutes';
   }
 
   Future<void> _showCustomReminderDialog() async {
@@ -373,7 +373,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('กำหนดเวลาแจ้งเตือนเอง'),
+              title: const Text('Custom reminder time'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -381,7 +381,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     controller: valueController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'จำนวนเวลา',
+                      labelText: 'Amount',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -389,13 +389,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   DropdownButtonFormField<String>(
                     initialValue: unit,
                     decoration: const InputDecoration(
-                      labelText: 'หน่วย',
+                      labelText: 'Unit',
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'minutes', child: Text('นาที')),
-                      DropdownMenuItem(value: 'hours', child: Text('ชั่วโมง')),
-                      DropdownMenuItem(value: 'days', child: Text('วัน')),
+                      DropdownMenuItem(value: 'minutes', child: Text('Minutes')),
+                      DropdownMenuItem(value: 'hours', child: Text('Hours')),
+                      DropdownMenuItem(value: 'days', child: Text('Days')),
                     ],
                     onChanged: (value) {
                       if (value == null) return;
@@ -407,14 +407,14 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('ยกเลิก'),
+                  child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final amount = int.tryParse(valueController.text.trim());
                     if (amount == null || amount <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('กรอกตัวเลขมากกว่า 0')),
+                        const SnackBar(content: Text('Enter a number greater than 0')),
                       );
                       return;
                     }
@@ -426,7 +426,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     };
                     Navigator.pop(dialogContext, duration);
                   },
-                  child: const Text('บันทึก'),
+                  child: const Text('Save'),
                 ),
               ],
             );
@@ -445,7 +445,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('แอปยังไม่ได้รับสิทธิ์แจ้งเตือน กรุณาเปิด Notifications ก่อน'),
+          content: Text('Notification permission is not granted. Please enable notifications first.'),
           duration: Duration(seconds: 3),
         ),
       );
@@ -458,7 +458,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('ตั้งเตือนล่วงหน้า ${_getDurationLabel(offset)} แล้ว'),
+        content: Text('Reminder set to ${_getDurationLabel(offset)} before due time'),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ),
@@ -476,7 +476,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ส่งทดสอบไม่ได้ เพราะยังไม่อนุญาต Notifications'),
+          content: Text('Unable to send test notification because notification permission is not granted'),
           duration: Duration(seconds: 3),
         ),
       );
@@ -485,14 +485,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
     await _notificationService.showImmediateNotification(
       id: DateTime.now().millisecondsSinceEpoch,
-      title: '🔔 ทดสอบแจ้งเตือน',
-      body: 'แจ้งเตือนใช้งานได้แล้ว',
+      title: '🔔 Notification test',
+      body: 'Notifications are working correctly',
       payload: 'test',
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('ส่งแจ้งเตือนทดสอบแล้ว'),
+        content: Text('Test notification sent'),
         duration: Duration(seconds: 2),
       ),
     );

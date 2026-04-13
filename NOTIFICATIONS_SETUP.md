@@ -71,10 +71,10 @@ First notification will show a permission request - User must grant permission.
 
 | Type | When | Icon | Example |
 |------|------|------|---------|
-| Task Reminder | 24hrs before due | ⏰ | "⏰ งาน 'Math HW' ใกล้ถึงกำหนดส่ง!" |
-| Task Overdue | Past due date | ⚠️ | "⚠️ คุณมีงานค้าง 2 ชิ้น!" |
-| Submission Success | After submitting | ✅ | "✅ ส่งงานสำเร็จ!" |
-| Classroom Sync | After syncing | 🔄 | "🔄 ซิงค์ Classroom เสร็จ - 5 งาน" |
+| Task Reminder | 24hrs before due | ⏰ | "⏰ Task 'Math HW' is due soon!" |
+| Task Overdue | Past due date | ⚠️ | "⚠️ You have 2 overdue tasks!" |
+| Submission Success | After submitting | ✅ | "✅ Task submitted successfully!" |
+| Classroom Sync | After syncing | 🔄 | "🔄 Classroom sync completed - 5 tasks" |
 
 ---
 

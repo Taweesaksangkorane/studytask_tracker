@@ -72,9 +72,9 @@ class _CalendarPageState extends State<CalendarPage> {
     }
 
     final thaiMonths = [
-      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
-      'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
-      'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+      'January', 'February', 'March', 'April',
+      'May', 'June', 'July', 'August',
+      'September', 'October', 'November', 'December'
     ];
 
     final selectedDateTasks = _selectedDate != null 
@@ -84,7 +84,7 @@ class _CalendarPageState extends State<CalendarPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('ปฎิทินงาน',
+        title: const Text('Task Calendar',
             style: TextStyle(
                 color: Colors.black,
                 fontSize: 20,
@@ -120,7 +120,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           onPressed: _previousMonth,
                         ),
                         Text(
-                          '${thaiMonths[_currentMonth.month - 1]} ${_currentMonth.year + 543}',
+                          '${thaiMonths[_currentMonth.month - 1]} ${_currentMonth.year}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -143,37 +143,37 @@ class _CalendarPageState extends State<CalendarPage> {
                       crossAxisSpacing: 8,
                       children: [
                         // Week day headers
-                        const Text('อ', textAlign: TextAlign.center, 
+                        const Text('S', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold, 
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('จ', textAlign: TextAlign.center, 
+                        const Text('M', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('อ', textAlign: TextAlign.center, 
+                        const Text('T', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('พ', textAlign: TextAlign.center, 
+                        const Text('W', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('พฤ', textAlign: TextAlign.center, 
+                        const Text('T', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('ศ', textAlign: TextAlign.center, 
+                        const Text('F', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 color: Colors.blueGrey)),
-                        const Text('ส', textAlign: TextAlign.center, 
+                        const Text('S', textAlign: TextAlign.center, 
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -256,7 +256,7 @@ class _CalendarPageState extends State<CalendarPage> {
               // Selected date tasks
               if (_selectedDate != null) ...[
                 Text(
-                  'งานวันที่ ${_selectedDate!.day} ${thaiMonths[_selectedDate!.month - 1]} ${_selectedDate!.year + 543}',
+                  'Tasks on ${_selectedDate!.day} ${thaiMonths[_selectedDate!.month - 1]} ${_selectedDate!.year}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -270,7 +270,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         child: Padding(
                           padding: const EdgeInsets.all(40),
                           child: Text(
-                            'ไม่มีงานในวันนี้',
+                            'No tasks for this day',
                             style: TextStyle(
                                 color: Colors.grey[400],
                                 fontSize: 14),
@@ -366,7 +366,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                                           size: 14),
                                                       SizedBox(width: 4),
                                                       Text(
-                                                          "ปิดรับงานแล้ว",
+                                                          "Submission closed",
                                                           style: TextStyle(
                                                               color: Colors.red,
                                                               fontSize: 10,

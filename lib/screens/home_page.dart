@@ -129,19 +129,19 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatCard("ทั้งหมด", _total.toString(),
+                      _buildStatCard("All", _total.toString(),
                           Icons.grid_view_rounded,
                           _filter == TaskFilter.all,
                           Colors.blueAccent, () {
                         setState(() => _filter = TaskFilter.all);
                       }),
-                      _buildStatCard("ส่งแล้ว", _submitted.toString(),
+                      _buildStatCard("Submitted", _submitted.toString(),
                           Icons.send_rounded,
                           _filter == TaskFilter.submitted,
                           Colors.green, () {
                         setState(() => _filter = TaskFilter.submitted);
                       }),
-                      _buildStatCard("ยังไม่ส่ง", _pending.toString(),
+                      _buildStatCard("Pending", _pending.toString(),
                           Icons.access_time_filled,
                           _filter == TaskFilter.pending,
                           Colors.orangeAccent, () {
@@ -174,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                           key: ValueKey('empty-$_filter'),
                           child: const Padding(
                             padding: EdgeInsets.all(40),
-                            child: Text("ยังไม่มีงาน",
+                            child: Text("No tasks yet",
                                 style: TextStyle(color: Colors.grey)),
                           ),
                         )
@@ -218,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                 Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'สร้างงานสำเร็จ และตั้งแจ้งเตือนให้แล้ว',
+                  'Task created and reminder has been set',
                   style: TextStyle(color: Colors.white),
                 ),
               ],
@@ -254,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                       fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 5),
-            const Text("งานของคุณ",
+            const Text("Your Tasks",
                 style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -322,7 +322,7 @@ class _HomePageState extends State<HomePage> {
 
     if (overdueTasks.isNotEmpty) {
       final task = overdueTasks.first;
-      message = "⚠️ คุณมีงานค้าง ${overdueTasks.length} ชิ้น! รีบทำ '${task.title}' ให้เสร็จนะ";
+      message = "⚠️ You have ${overdueTasks.length} overdue task(s)! Finish '${task.title}' soon.";
       icon = Icons.warning_amber_rounded;
       bgColor = const Color(0xFFFFEBEE);
       iconColor = Colors.red;
@@ -330,19 +330,19 @@ class _HomePageState extends State<HomePage> {
     } else if (urgentTasks.isNotEmpty) {
       final task = urgentTasks.first;
       final hoursLeft = task.dueDate.difference(now).inHours;
-      message = "⏰ ใกล้ครบกำหนดแล้ว! '${task.title}' เหลือเวลาอีก $hoursLeft ชั่วโมง";
+      message = "⏰ Deadline is approaching! '${task.title}' has $hoursLeft hour(s) left.";
       icon = Icons.access_time_filled;
       bgColor = const Color(0xFFFFFBEB);
       iconColor = Colors.orange;
       textColor = Colors.brown;
     } else if (_pending > 0) {
-      message = "💪 คุณมีงานทั้งหมด $_pending ชิ้น ค่อยๆ ทำไปทีละอย่างนะ สู้ๆ!";
+      message = "💪 You have $_pending task(s). Take it one step at a time, you got this!";
       icon = Icons.auto_awesome;
       bgColor = const Color(0xFFE3F2FD);
       iconColor = Colors.blue;
       textColor = Colors.blue.shade900;
     } else {
-      message = "🎉 เยี่ยมเลย! คุณไม่มีงานค้าง พักผ่อนได้สบายใจ";
+      message = "🎉 Great job! You have no overdue tasks. Take a well-deserved break.";
       icon = Icons.celebration;
       bgColor = const Color(0xFFE8F5E9);
       iconColor = Colors.green;
@@ -407,7 +407,7 @@ class _HomePageState extends State<HomePage> {
                 if (!mounted) return;
                 _showTopNotice(
                   context,
-                  content: const Text('กรุณาเข้าสู่ระบบก่อนซิงค์ Classroom'),
+                  content: const Text('Please sign in before syncing Classroom'),
                 );
                 return;
               }
@@ -435,7 +435,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     SizedBox(width: 12),
-                    Text("กำลังซิงค์ Classroom..."),
+                    Text("Syncing Classroom..."),
                   ],
                 ),
               );
@@ -463,8 +463,8 @@ class _HomePageState extends State<HomePage> {
                       const Icon(Icons.check_circle, color: Colors.white, size: 20),
                       const SizedBox(width: 8),
                       Text(savedCount == 0
-                          ? "ไม่พบงานที่มีวันกำหนดส่ง"
-                            : "นำเข้างาน $savedCount รายการสำเร็จ",
+                          ? "No tasks with due dates were found"
+                            : "Imported $savedCount task(s) successfully",
                         style: const TextStyle(color: Colors.white),
                       ),
                     ],
@@ -475,19 +475,19 @@ class _HomePageState extends State<HomePage> {
                 _hideTopNotice();
                 
                 // Parse error message
-                String errorMsg = "ซิงค์ไม่สำเร็จ";
-                if (e.toString().contains('กรุณาเข้าสู่ระบบ')) {
-                  errorMsg = "กรุณาล็อกอินด้วย Google ก่อนซิงค์";
+                String errorMsg = "Sync failed";
+                if (e.toString().contains('Please sign in')) {
+                  errorMsg = "Please sign in with Google before syncing";
                 } else if (e.toString().contains('Failed to load')) {
-                  errorMsg = "ไม่สามารถเชื่อมต่อ Classroom ได้";
+                  errorMsg = "Unable to connect to Classroom";
                 } else {
-                  errorMsg = "เกิดข้อผิดพลาด: ${e.toString()}";
+                  errorMsg = "Error: ${e.toString()}";
                 }
                 
                 _showTopNotice(
                   context,
                   backgroundColor: const Color(0xFFD14343),
-                  actionLabel: 'ลองอีกครั้ง',
+                  actionLabel: 'Try again',
                   onAction: () {},
                   content: Row(
                     children: [
@@ -686,7 +686,7 @@ class _HomePageState extends State<HomePage> {
                                 SizedBox(
                                     width: 4),
                                 Text(
-                                    "ปิดรับงานแล้ว",
+                                  "Submission closed",
                                     style: TextStyle(
                                         color: Colors.red,
                                         fontSize: 10,
@@ -723,7 +723,7 @@ class _HomePageState extends State<HomePage> {
                               width: 5),
                           Text(
                               task.isNoDeadline
-                                  ? "ไม่มีกำหนด"
+                                  ? "No deadline"
                                   : "${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}",
                               style:
                                   const TextStyle(
@@ -778,7 +778,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Icon(Icons.home_filled,
                   color: Colors.blueAccent),
-              Text("หน้าหลัก",
+                Text("Home",
                   style: TextStyle(
                       color: Colors.blueAccent,
                       fontSize: 10)),
@@ -796,7 +796,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Icon(Icons.settings_outlined,
                     color: Colors.grey),
-                Text("ตั้งค่า",
+                Text("Settings",
                     style: TextStyle(
                         color: Colors.grey,
                         fontSize: 10)),

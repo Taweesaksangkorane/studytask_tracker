@@ -16,12 +16,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      _showSnack('กรุณากรอก Email');
+      _showSnack('Please enter your email');
       return;
     }
 
     if (!email.contains('@')) {
-      _showSnack('รูปแบบ Email ไม่ถูกต้อง');
+      _showSnack('Invalid email format');
       return;
     }
 
@@ -34,24 +34,24 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
       if (!mounted) return;
 
-      _showSnack('ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว');
+      _showSnack('Password reset link sent');
 
       Navigator.pop(context);
 
     } on FirebaseAuthException catch (e) {
 
-      String errorMessage = 'เกิดข้อผิดพลาด';
+      String errorMessage = 'An error occurred';
 
       if (e.code == 'user-not-found') {
-        errorMessage = 'ไม่พบบัญชีนี้';
+        errorMessage = 'Account not found';
       } else if (e.code == 'invalid-email') {
-        errorMessage = 'รูปแบบ Email ไม่ถูกต้อง';
+        errorMessage = 'Invalid email format';
       }
 
       _showSnack(errorMessage);
 
     } catch (e) {
-      _showSnack('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      _showSnack('Something went wrong. Please try again');
     } finally {
       if (mounted) setState(() => isSending = false);
     }
