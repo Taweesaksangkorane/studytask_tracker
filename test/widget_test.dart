@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('StudyTask'), findsOneWidget);
+    expect(find.text('StudyTask Tracker'), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
   });
 }
