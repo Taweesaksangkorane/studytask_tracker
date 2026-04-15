@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'StudyTask',
+      title: 'StudyTask Tracker',
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: Colors.blueAccent,

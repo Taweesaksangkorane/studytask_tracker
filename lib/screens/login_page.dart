@@ -186,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 28),
                             const Text(
-                              'StudyTask',
+                              'StudyTask Tracker',
                               style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                             const SizedBox(height: 12),

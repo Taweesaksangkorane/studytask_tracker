@@ -72,7 +72,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionTitle('About'),
             _buildSettingTile(
               icon: Icons.info_outline,
-              title: 'About StudyTask',
+              title: 'About StudyTask Tracker',
               subtitle: 'Version 1.0.0',
               onTap: () => _showAboutDialog(),
             ),
@@ -502,14 +502,14 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('About StudyTask'),
+        title: const Text('About StudyTask Tracker'),
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'StudyTask',
+                'StudyTask Tracker',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
