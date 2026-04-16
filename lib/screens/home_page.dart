@@ -776,7 +776,7 @@ class _HomePageState extends State<HomePage> {
           const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.home_filled,
+              Icon(Icons.house_rounded,
                   color: Colors.blueAccent),
                 Text("Home",
                   style: TextStyle(
@@ -794,7 +794,7 @@ class _HomePageState extends State<HomePage> {
             child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.settings_outlined,
+              Icon(Icons.tune_rounded,
                     color: Colors.grey),
                 Text("Settings",
                     style: TextStyle(
