@@ -1,0 +1,49 @@
+<svg width="1024" height="500" viewBox="0 0 1024 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F172A"/>
+      <stop offset="0.52" stop-color="#123B7A"/>
+      <stop offset="1" stop-color="#2E6BFF"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="180" y1="120" x2="420" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7DD3FC" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#7DD3FC" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="iconInner" x1="160" y1="140" x2="320" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1024" height="500" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="20" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="500" rx="0" fill="url(#bg)"/>
+  <circle cx="160" cy="120" r="130" fill="url(#glow)"/>
+  <circle cx="920" cy="400" r="170" fill="#93C5FD" fill-opacity="0.12"/>
+  <circle cx="840" cy="100" r="90" fill="#A5B4FC" fill-opacity="0.08"/>
+
+  <!-- Icon block -->
+  <g filter="url(#shadow)">
+    <rect x="72" y="98" width="320" height="320" rx="56" fill="#FFFFFF"/>
+    <rect x="126" y="146" width="212" height="220" rx="38" fill="url(#iconInner)"/>
+    <path d="M152 190C152 177.85 161.85 168 174 168H252C264.15 168 274 177.85 274 190V272C274 284.15 264.15 294 252 294H174C161.85 294 152 284.15 152 272V190Z" fill="#0B1120"/>
+    <path d="M190 194C196.075 194 201 189.075 201 183C201 176.925 196.075 172 190 172C183.925 172 179 176.925 179 183C179 189.075 183.925 194 190 194Z" fill="#E5F4FF"/>
+    <path d="M224 184H266" stroke="#E5F4FF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M180 226L193 239L213 216" stroke="#E5F4FF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M224 224H266" stroke="#E5F4FF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M180 258L193 271L213 248" stroke="#E5F4FF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M224 256H266" stroke="#E5F4FF" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Text -->
+  <g font-family="Inter, Arial, Helvetica, sans-serif" fill="#FFFFFF">
+    <text x="430" y="145" font-size="78" font-weight="800" letter-spacing="-1.5">StudyTask</text>
+    <text x="430" y="230" font-size="78" font-weight="800" letter-spacing="-1.5">Tracker</text>
+    <text x="430" y="316" font-size="36" font-weight="600" opacity="0.98">Track tasks. Sync Classroom.</text>
+    <text x="430" y="364" font-size="36" font-weight="600" opacity="0.98">Never miss deadlines.</text>
+  </g>
+
+  <!-- Accent line -->
+  <rect x="430" y="392" width="330" height="6" rx="3" fill="#93C5FD" fill-opacity="0.8"/>
+</svg>

@@ -1,4 +1,16 @@
 {
+  "targets": {
+    "studytask-tracker-bbfb3": {
+      "hosting": {
+        "webapp": [
+          "studytask-tracker-bbfb3"
+        ],
+        "landing": [
+          "studytask-legal-pages"
+        ]
+      }
+    }
+  },
   "projects": {
     "default": "studytask-tracker-bbfb3"
   }
