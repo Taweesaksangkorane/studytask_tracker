@@ -27,7 +27,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAeNT050GKSY_q7_7RazpFrHgIo_IgU60M',
-    appId: '1:192014714672:android:26910181757f6a9b3c6af5',
+    appId: '1:192014714672:android:c8f444eb7a72bb7f3c6af5',
     messagingSenderId: '192014714672',
     projectId: 'studytask-tracker-bbfb3',
     storageBucket: 'studytask-tracker-bbfb3.firebasestorage.app',
