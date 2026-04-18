@@ -1,10 +1,10 @@
-package com.example.studytask_tracker
+package com.tawee.studytasktracker
 
-import io.flutter.embedding.android.FlutterActivity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
+import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +16,6 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-            // Create task reminders channel
             val taskChannel = NotificationChannel(
                 "task_channel",
                 "Task Reminders",

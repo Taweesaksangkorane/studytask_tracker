@@ -16,7 +16,7 @@ val keystoreProperties = Properties().apply {
 
 
 android {
-    namespace = "com.example.studytask_tracker"
+    namespace = "com.tawee.studytasktracker"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.studytask_tracker"
+        applicationId = "com.tawee.studytasktracker"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

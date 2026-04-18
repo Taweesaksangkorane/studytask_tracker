@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:192014714672:android:26910181757f6a9b3c6af5",
         "android_client_info": {
-          "package_name": "com.example.studytask_tracker"
+          "package_name": "com.tawee.studytasktracker"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "192014714672-5mtdgu8e34t4v1brov3chmrtl2u3lb61.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.studytask_tracker",
+            "package_name": "com.tawee.studytasktracker",
             "certificate_hash": "2b12fcb2cc6add6b0d373e8e2edc7108e66bf83e"
           }
         },
