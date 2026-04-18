@@ -66,6 +66,14 @@
           }
         },
         {
+          "client_id": "192014714672-7lnbr7nvut45o5dkrrsrumqud6ndqe9p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tawee.studytasktracker",
+            "certificate_hash": "4748889a349b48b7f96051818846117b6652674d"
+          }
+        },
+        {
           "client_id": "192014714672-f1a48avqo0bd5e5ll2jl6vh4ojdo3256.apps.googleusercontent.com",
           "client_type": 3
         }
