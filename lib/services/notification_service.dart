@@ -141,11 +141,6 @@ class NotificationService {
       return false;
     }
 
-    final exactPermission = await androidPlugin.requestExactAlarmsPermission();
-    _scheduleMode = exactPermission == true
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
     return true;
   }
 
